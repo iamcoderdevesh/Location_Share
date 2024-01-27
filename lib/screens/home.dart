@@ -1,9 +1,16 @@
+import 'dart:async';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:animated_location_indicator/animated_location_indicator.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:location/location.dart';
+import 'package:location/location.dart' as loc;
+import 'package:location_share/controllers/Share.dart';
+import 'package:location_share/state/state.dart';
 import 'package:location_share/widgets/bottomSheetModal.dart';
+import 'package:provider/provider.dart';
 import '../widgets/location_marker.dart';
 import '../widgets/map_overlay.dart';
 
@@ -16,6 +23,44 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final _mapController = MapController();
+  final Stream<QuerySnapshot> _locStream =
+      FirebaseFirestore.instance.collection('loc').snapshots();
+  final loc.Location location = loc.Location();
+
+  late LocationShareProvider state =
+      Provider.of<LocationShareProvider>(context, listen: false);
+  loc.LocationData? currentLocation;
+  bool isLoading = true;
+  late List pairsList = [];
+  List<Marker> markersList = [];
+  StreamSubscription<loc.LocationData>? _locationSubscription;
+
+  void updateMyLocation() {
+    location.getLocation().then(
+      (location) {
+        currentLocation = location;
+        isLoading = false;
+        setState(() {});
+      },
+    );
+
+    _locationSubscription =
+        location.onLocationChanged.handleError((dynamic err) {
+      _locationSubscription?.cancel();
+    }).listen((loc.LocationData newLoc) async {
+      currentLocation = newLoc;
+      await FirebaseFirestore.instance.collection('loc').doc(state.user_id).set(
+          {'latitude': newLoc.latitude, 'longitude': newLoc.longitude},
+          SetOptions(merge: true));
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    updateMyLocation();
+    _getPlace();
+  }
 
   @override
   void dispose() {
@@ -25,57 +70,102 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return FlutterMap(
-      mapController: _mapController,
-      options: MapOptions(
-        interactionOptions: const InteractionOptions(
-          enableMultiFingerGestureRace: true,
-        ),
-        initialCenter: const LatLng(20.5937, 78.9629),
-        initialZoom: 15.0,
-        minZoom: 2.0, // Minimum zoom level
-        maxZoom: 22.0, // Maximum zoom level
-        onMapReady: () async {
-          final position = await acquireUserLocation();
-          if (position != null) {
-            // IMPORTANT: rebuild location layer when permissions are granted
-            setState(() {
-              _mapController.move(
-                  LatLng(position.latitude as double,
-                      position.longitude as double),
-                  16);
-            });
-          }
-        },
-      ),
-      children: [
-        TileLayer(
-          urlTemplate:
-              'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-          tileProvider: NetworkTileProvider(),
-        ),
-        // const AnimatedLocationLayer(),
-        RepaintBoundary(
-          child: AnimatedSwitcher(
-            switchInCurve: Curves.ease,
-            switchOutCurve: Curves.ease,
-            duration: const Duration(milliseconds: 300),
-            child: MapOverlay(
-              acquireUserLocation: acquireUserLocation,
-              mapController: _mapController,
+    return Scaffold(
+      body: isLoading
+          ? const Center(
+              child: Text("Loading"),
+            )
+          : StreamBuilder<QuerySnapshot>(
+              stream: _locStream,
+              builder: (BuildContext context,
+                  AsyncSnapshot<QuerySnapshot> snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: Text("Loading"),
+                  );
+                }
+                if (snapshot.hasData) {
+                  getMarkers(snapshot.data!);
+                }
+                return FlutterMap(
+                  mapController: _mapController,
+                  options: MapOptions(
+                    interactionOptions: const InteractionOptions(
+                      enableMultiFingerGestureRace: true,
+                    ),
+                    initialCenter: LatLng(currentLocation!.latitude!,
+                        currentLocation!.longitude!),
+                    initialZoom: 14.5,
+                    minZoom: 2.0, // Minimum zoom level
+                    maxZoom: 22.0, // Maximum zoom level
+                    onMapReady: () async {
+                      pairsList = await ShareInfo(state, "").getShareInfo();
+                      final position = await acquireUserLocation();
+                      if (position != null) {
+                        // IMPORTANT: rebuild location layer when permissions are granted
+                        setState(() {
+                          _mapController.move(
+                              LatLng(position.latitude as double,
+                                  position.longitude as double),
+                              16);
+                        });
+                      }
+                    },
+                  ),
+                  children: [
+                    TileLayer(
+                      urlTemplate:
+                          'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                      tileProvider: NetworkTileProvider(),
+                    ),
+                    // const AnimatedLocationLayer(),
+                    RepaintBoundary(
+                      child: AnimatedSwitcher(
+                        switchInCurve: Curves.ease,
+                        switchOutCurve: Curves.ease,
+                        duration: const Duration(milliseconds: 300),
+                        child: MapOverlay(
+                            acquireUserLocation,
+                            _mapController,
+                            context.watch<LocationShareProvider>().shareCode,
+                            pairsList),
+                      ),
+                    ),
+                    MarkerLayer(markers: markersList),
+                  ],
+                );
+              },
             ),
-          ),
-        ),
-        MarkerLayer(
-          markers: [
-            customMarker(const LatLng(18.877927, 73.163683), 'D'),
-          ],
-        ),
-      ],
     );
   }
 
-  Marker customMarker(LatLng position, String initial) {
+  void getMarkers(QuerySnapshot snapshot) async {
+    List<Marker> newMarkers = [];
+    for (var document in snapshot.docs) {
+      Map<String, dynamic> data = document.data()! as Map<String, dynamic>;
+      DocumentSnapshot pairsInfo = await FirebaseFirestore.instance
+          .collection('pairs')
+          .doc(document.id)
+          .get();
+      if (pairsInfo.exists && pairsInfo.id != state.user_id) {
+        Map<String, dynamic> pairsData =
+            pairsInfo.data()! as Map<String, dynamic>;
+        if (pairsData.values.contains(true)) {
+          final userInfo = await getUserNameAndId(document.id);
+          Marker marker = customMarker(
+              LatLng(data['latitude'], data['longitude']),
+              userInfo?['user_logo'],
+              userInfo?['user_name']);
+          newMarkers.add(marker);
+        }
+      }
+    }
+    setState(() {
+      markersList = newMarkers;
+    });
+  }
+
+  Marker customMarker(LatLng position, String logo, String user_name) {
     return Marker(
       width: 40.0,
       height: 40.0,
@@ -84,15 +174,15 @@ class _HomePageState extends State<HomePage> {
         onTap: () {
           bottomSheetModal(
             context,
-            locationInfoPopover(),
+            locationInfoPopover(user_name),
           );
         },
-        child: CustomMarker(initial: initial),
+        child: CustomMarker(initial: logo),
       ),
     );
   }
 
-  Popover locationInfoPopover() {
+  Popover locationInfoPopover(String user_name) {
     return Popover(
       height: 275,
       child: Expanded(
@@ -107,11 +197,11 @@ class _HomePageState extends State<HomePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.max,
                     children: [
-                      const Padding(
-                        padding: EdgeInsets.only(bottom: 8),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
                         child: Text(
-                          "Devesh Ukalkar",
-                          style: TextStyle(
+                          user_name,
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
@@ -193,33 +283,56 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-}
+  Future<loc.LocationData?> acquireUserLocation() async {
+    bool serviceEnabled;
+    loc.PermissionStatus permissionGranted;
 
-Future<LocationData?> acquireUserLocation() async {
-  Location location = Location();
-
-  bool serviceEnabled;
-  PermissionStatus permissionGranted;
-
-  permissionGranted = await location.hasPermission();
-  if (permissionGranted == PermissionStatus.denied) {
-    permissionGranted = await location.requestPermission();
-    if (permissionGranted != PermissionStatus.granted) {
-      return null;
+    permissionGranted = await location.hasPermission();
+    if (permissionGranted == loc.PermissionStatus.denied) {
+      permissionGranted = await location.requestPermission();
+      if (permissionGranted != loc.PermissionStatus.granted) {
+        return null;
+      }
     }
-  }
 
-  serviceEnabled = await location.serviceEnabled();
-  if (!serviceEnabled) {
-    serviceEnabled = await location.requestService();
+    serviceEnabled = await location.serviceEnabled();
     if (!serviceEnabled) {
+      serviceEnabled = await location.requestService();
+      if (!serviceEnabled) {
+        return null;
+      } else {
+        updateMyLocation();
+      }
+    } else {
+      updateMyLocation();
+    }
+
+    try {
+      return await location.getLocation();
+    } catch (e) {
       return null;
     }
   }
 
-  try {
-    return await location.getLocation();
-  } catch (e) {
+  Future<Map<String, dynamic>?> getUserNameAndId(String userId) async {
+    final userDoc =
+        FirebaseFirestore.instance.collection('users_info').doc(userId);
+    final snapshot = await userDoc.get();
+    if (snapshot.exists) {
+      return {
+        'id': snapshot.data()!['id'],
+        'user_logo': snapshot.data()!['name'].toString().substring(0, 1),
+        'user_name': snapshot.data()!['name'],
+        'status': snapshot.data()!['status'],
+      };
+    }
     return null;
+  }
+
+  void _getPlace() async {
+    List<Placemark> placemarks =
+        await placemarkFromCoordinates(18.8814214, 73.1638537);
+    Placemark place = placemarks[0];
+    print("address " + place.administrativeArea.toString() + place.country.toString() + place.isoCountryCode.toString() + place.locality.toString() + place.name.toString() + place.postalCode.toString() + place.street.toString() + place.subAdministrativeArea.toString() + place.subLocality.toString() + place.subThoroughfare.toString() + place.thoroughfare.toString());
   }
 }

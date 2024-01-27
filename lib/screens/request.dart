@@ -52,10 +52,10 @@ class _RequestLocationState extends State<RequestLocation> with SingleTickerProv
                   unselectedLabelColor: Colors.grey.shade900,
                   tabs: const [
                     Tab(
-                      text: 'Location Code',
+                      text: 'Scan QR Code',
                     ),
                     Tab(
-                      text: 'Scan QR Code',
+                      text: 'Location Code',
                     ),
                   ],
                 ),
@@ -64,8 +64,8 @@ class _RequestLocationState extends State<RequestLocation> with SingleTickerProv
                 child: TabBarView(
                   controller: _tabController,
                   children: const [
-                    LocationCode(),
                     QRScanner(),
+                    LocationCode(),
                   ],
                 ),
               ),

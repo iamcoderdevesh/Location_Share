@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:location_share/state/state.dart';
+import 'package:provider/provider.dart';
 
 class ShareManually extends StatefulWidget {
   const ShareManually({super.key});
@@ -36,8 +38,8 @@ class _ShareManuallyState extends State<ShareManually> {
                     border: Border.all(color: Colors.white),
                     borderRadius: BorderRadius.circular(5.0),
                   ),
-                  child: const SelectableText(
-                    'IM5DMIBO',
+                  child: SelectableText(
+                    context.watch<LocationShareProvider>().shareCode,
                     style: TextStyle(color: Colors.white),
                   ),
                 ),

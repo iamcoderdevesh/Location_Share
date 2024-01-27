@@ -9,7 +9,8 @@ class ShareLocation extends StatefulWidget {
   State<ShareLocation> createState() => _ShareLocationState();
 }
 
-class _ShareLocationState extends State<ShareLocation> with SingleTickerProviderStateMixin{
+class _ShareLocationState extends State<ShareLocation>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -52,10 +53,10 @@ class _ShareLocationState extends State<ShareLocation> with SingleTickerProvider
                   unselectedLabelColor: Colors.grey.shade900,
                   tabs: const [
                     Tab(
-                      text: 'Share Manually',
+                      text: 'Share with QR Code',
                     ),
                     Tab(
-                      text: 'Share with QR Code',
+                      text: 'Share Manually',
                     ),
                   ],
                 ),
@@ -64,8 +65,8 @@ class _ShareLocationState extends State<ShareLocation> with SingleTickerProvider
                 child: TabBarView(
                   controller: _tabController,
                   children: const [
-                    ShareManually(),
                     ShareWithQrCode(),
+                    ShareManually(),
                   ],
                 ),
               ),

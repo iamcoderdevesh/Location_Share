@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:location_share/state/state.dart';
+import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 class ShareWithQrCode extends StatefulWidget {
@@ -9,11 +11,13 @@ class ShareWithQrCode extends StatefulWidget {
 }
 
 class _ShareWithQrCodeState extends State<ShareWithQrCode> {
-  String qrData = 'u89349w';
   final qrText = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
+
+    String qrData = context.watch<LocationShareProvider>().shareCode;
+
     return Scaffold(
       body: SafeArea(
         child: Padding(
