@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:location_share/state/state.dart';
 import 'package:location_share/themes/theme.dart';
 import 'package:location_share/widgets/bottomNavbar.dart';
@@ -8,6 +9,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'controllers/UserInfo.dart';
 
 void main() async {
+  SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(statusBarColor: Colors.grey.shade800));
+
   WidgetsFlutterBinding.ensureInitialized();
 
   Platform.isAndroid

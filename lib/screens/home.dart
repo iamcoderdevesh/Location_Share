@@ -59,7 +59,6 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     updateMyLocation();
-    _getPlace();
   }
 
   @override
@@ -151,11 +150,14 @@ class _HomePageState extends State<HomePage> {
         Map<String, dynamic> pairsData =
             pairsInfo.data()! as Map<String, dynamic>;
         if (pairsData.values.contains(true)) {
+
           final userInfo = await getUserNameAndId(document.id);
+          String userAddress = await getUserAddress(LatLng(data['latitude'], data['longitude']));
+
           Marker marker = customMarker(
               LatLng(data['latitude'], data['longitude']),
               userInfo?['user_logo'],
-              userInfo?['user_name']);
+              userInfo?['user_name'], userAddress);
           newMarkers.add(marker);
         }
       }
@@ -165,7 +167,7 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  Marker customMarker(LatLng position, String logo, String user_name) {
+  Marker customMarker(LatLng position, String logo, String userName, String userAddress) {
     return Marker(
       width: 40.0,
       height: 40.0,
@@ -174,7 +176,7 @@ class _HomePageState extends State<HomePage> {
         onTap: () {
           bottomSheetModal(
             context,
-            locationInfoPopover(user_name),
+            locationInfoPopover(userName, userAddress),
           );
         },
         child: CustomMarker(initial: logo),
@@ -182,7 +184,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Popover locationInfoPopover(String user_name) {
+  Popover locationInfoPopover(String userName, String userAddress) {
     return Popover(
       height: 275,
       child: Expanded(
@@ -200,7 +202,7 @@ class _HomePageState extends State<HomePage> {
                       Padding(
                         padding: const EdgeInsets.only(bottom: 8),
                         child: Text(
-                          user_name,
+                          userName,
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -246,11 +248,11 @@ class _HomePageState extends State<HomePage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                const Expanded(
+                Expanded(
                   child: Text(
-                    "22 A, Karade kh., Maharashtra 410220, India",
+                    userAddress,
                     softWrap: true,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontWeight: FontWeight.w400,
                     ),
                   ),
@@ -329,10 +331,11 @@ class _HomePageState extends State<HomePage> {
     return null;
   }
 
-  void _getPlace() async {
+  Future<String> getUserAddress(LatLng position) async {
     List<Placemark> placemarks =
-        await placemarkFromCoordinates(18.8814214, 73.1638537);
+        await placemarkFromCoordinates(position.latitude, position.longitude);
     Placemark place = placemarks[0];
-    print("address " + place.administrativeArea.toString() + place.country.toString() + place.isoCountryCode.toString() + place.locality.toString() + place.name.toString() + place.postalCode.toString() + place.street.toString() + place.subAdministrativeArea.toString() + place.subLocality.toString() + place.subThoroughfare.toString() + place.thoroughfare.toString());
+    return "${place.street}, ${place.name}, ${place.subLocality}, ${place.locality}, ${place.administrativeArea}, ${place.postalCode}, ${place.country}";
+    
   }
 }
