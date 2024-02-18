@@ -1,10 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter/material.dart';
 import 'package:location_share/state/state.dart';
+import 'package:location_share/utils/utils.dart';
 
 class UserInfoHandler {
   final LocationShareProvider state;
   final String _shareCode = DateTime.now().millisecondsSinceEpoch.toString();
+  final String color = Utils().generateRandomColor();
 
   UserInfoHandler(this.state);
 
@@ -18,6 +21,7 @@ class UserInfoHandler {
         user_id: androidInfo.id!,
         userEmail: "test@mail.com",
         status: 'inactive',
+        color: color,
         shareCode: _shareCode);
 
     try {
@@ -38,6 +42,7 @@ class UserInfoHandler {
           userEmail: snapshot.data()!['email'],
           status: snapshot.data()!['status'],
           shareCode: snapshot.data()!['share_code'],
+          color: snapshot.data()!['color'],
         );
       } else {
         await setUserInfo();
@@ -58,7 +63,10 @@ class UserInfoHandler {
         'email': state.userEmail,
         'share_code': state.shareCode,
         'status': 'inactive',
+        'color': color,
+        'joined_on': DateTime.now().millisecondsSinceEpoch,
       });
+      print("success");
       return true;
     } catch (e) {
       return false;

@@ -87,7 +87,8 @@ class _ProfilePageState extends State<ProfilePage> {
                         user_id: state.user_id,
                         userEmail: email,
                         status: state.status,
-                        shareCode: state.shareCode);
+                        shareCode: state.shareCode,
+                        color: state.color);
                     if (await UserInfoHandler(state).setUserInfo()) {
                       // ignore: use_build_context_synchronously
                       ScaffoldMessenger.of(context).showSnackBar(

@@ -1,10 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:location/location.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:location_share/controllers/Share.dart';
 import 'package:location_share/state/state.dart';
+import 'package:location_share/utils/utils.dart';
 import 'package:provider/provider.dart';
 
 import 'bottomSheetModal.dart';
@@ -13,10 +14,9 @@ import 'package:location_share/widgets/location_marker.dart';
 
 class MapOverlay extends StatefulWidget {
   final String userId;
-  final Future<LocationData?> Function() acquireUserLocation;
   final MapController mapController;
 
-  const MapOverlay(this.acquireUserLocation, this.mapController, this.userId,
+  const MapOverlay(this.mapController, this.userId,
       {super.key});
 
   @override
@@ -61,7 +61,7 @@ class _MapOverlayState extends State<MapOverlay> {
                           Theme.of(context).colorScheme.onPrimaryContainer,
                       active: false,
                       onPressed: () async {
-                        final position = await widget.acquireUserLocation();
+                        final position = await Utils().acquireUserLocation(context);
                         if (position != null) {
                           widget.mapController.move(
                               LatLng(position.latitude as double,
@@ -185,7 +185,6 @@ class _MapOverlayState extends State<MapOverlay> {
                 width: 40.0,
                 child: CustomMarker(
                   initial: doc['name'].toString().substring(0, 1),
-                  color: Colors.lightBlueAccent,
                 ),
               ),
               const SizedBox(width: 10),

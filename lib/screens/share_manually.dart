@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:location_share/state/state.dart';
+import 'package:location_share/widgets/snackbar.dart';
 import 'package:provider/provider.dart';
 
 class ShareManually extends StatefulWidget {
@@ -10,7 +12,8 @@ class ShareManually extends StatefulWidget {
 }
 
 class _ShareManuallyState extends State<ShareManually> {
-  
+  late String code = context.watch<LocationShareProvider>().shareCode;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -42,14 +45,22 @@ class _ShareManuallyState extends State<ShareManually> {
                     borderRadius: BorderRadius.circular(5.0),
                   ),
                   child: SelectableText(
-                    context.watch<LocationShareProvider>().shareCode,
+                    code,
                     style: TextStyle(color: theme.colorScheme.secondary),
                   ),
                 ),
                 const SizedBox(height: 20.0),
                 ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(backgroundColor: theme.colorScheme.secondary),
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: code)).then((value) {
+                    // ignore: use_build_context_synchronously
+                    ScaffoldMessenger.of(context)
+                        // ignore: use_build_context_synchronously
+                        .showSnackBar(ShowSnack("Location Code Copied", context).snackBar);
+                    });
+                  },
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.colorScheme.secondary),
                   child: const Text('COPY'),
                 ),
               ],

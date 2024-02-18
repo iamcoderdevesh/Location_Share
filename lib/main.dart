@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:location_share/state/state.dart';
 import 'package:location_share/themes/theme.dart';
 import 'package:location_share/widgets/bottomNavbar.dart';

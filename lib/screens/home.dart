@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:animated_location_indicator/animated_location_indicator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:location/location.dart' as loc;
 import 'package:location_share/controllers/Share.dart';
 import 'package:location_share/state/state.dart';
 import 'package:location_share/utils/utils.dart';
@@ -26,34 +26,39 @@ class _HomePageState extends State<HomePage> {
   final _mapController = MapController();
   final Stream<QuerySnapshot> _locStream =
       FirebaseFirestore.instance.collection('loc').snapshots();
-  final loc.Location location = loc.Location();
-
+  final Geolocator geolocator = Geolocator();
   late LocationShareProvider state =
       Provider.of<LocationShareProvider>(context, listen: false);
-  loc.LocationData? currentLocation;
+  Position? currentLocation;
   bool isLoading = true;
   late List pairsList = [];
   List<Marker> markersList = [];
-  StreamSubscription<loc.LocationData>? _locationSubscription;
+  StreamSubscription<Position>? _locationSubscription;
 
-  void updateMyLocation() {
-    location.getLocation().then(
-      (location) {
-        currentLocation = location;
-        isLoading = false;
-        setState(() {});
-      },
-    );
+  void updateMyLocation() async {
+    try {
+      Position position = await Geolocator.getCurrentPosition();
+      currentLocation = position;
+      isLoading = false;
+      setState(() {});
 
-    _locationSubscription =
-        location.onLocationChanged.handleError((dynamic err) {
-      _locationSubscription?.cancel();
-    }).listen((loc.LocationData newLoc) async {
-      currentLocation = newLoc;
-      await FirebaseFirestore.instance.collection('loc').doc(state.user_id).set(
-          {'latitude': newLoc.latitude, 'longitude': newLoc.longitude, 'updatedAt': DateTime.now().millisecondsSinceEpoch},
-          SetOptions(merge: true));
-    });
+      _locationSubscription =
+          Geolocator.getPositionStream().handleError((dynamic err) {
+        _locationSubscription?.cancel();
+      }).listen((Position newLoc) async {
+        currentLocation = newLoc;
+        await FirebaseFirestore.instance
+            .collection('loc')
+            .doc(state.user_id)
+            .set({
+          'latitude': newLoc.latitude,
+          'longitude': newLoc.longitude,
+          'updatedAt': DateTime.now().millisecondsSinceEpoch
+        }, SetOptions(merge: true));
+      });
+    } catch (e) {
+      print(e);
+    }
   }
 
   @override
@@ -71,70 +76,69 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: isLoading
-          ? const Center(
+      body: StreamBuilder<QuerySnapshot>(
+        stream: _locStream,
+        builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
               child: Text("Loading"),
-            )
-          : StreamBuilder<QuerySnapshot>(
-              stream: _locStream,
-              builder: (BuildContext context,
-                  AsyncSnapshot<QuerySnapshot> snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: Text("Loading"),
-                  );
+            );
+          }
+          if (snapshot.hasData) {
+            getMarkers(snapshot.data!);
+          }
+          LatLng? initialCenter;
+          return FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              interactionOptions: const InteractionOptions(
+                enableMultiFingerGestureRace: true,
+              ),
+              initialCenter: initialCenter ??
+                  const LatLng(0, 0), // Use a default location if currentLocation is null
+              initialZoom: 14.5,
+              minZoom: 2.0,
+              maxZoom: 22.0,
+              onMapReady: () async {
+                pairsList = await ShareInfo(state).getShareInfo();
+                // ignore: use_build_context_synchronously
+                final position = await Utils().acquireUserLocation(context);
+                if (position != null) {
+                  setState(() {
+                    _mapController.move(
+                      LatLng(position.latitude, position.longitude),
+                      16,
+                    );
+                  });
                 }
-                if (snapshot.hasData) {
-                  getMarkers(snapshot.data!);
+                else {
+                  // ignore: use_build_context_synchronously
+                  showPopup(context);
                 }
-                return FlutterMap(
-                  mapController: _mapController,
-                  options: MapOptions(
-                    interactionOptions: const InteractionOptions(
-                      enableMultiFingerGestureRace: true,
-                    ),
-                    initialCenter: LatLng(currentLocation!.latitude!,
-                        currentLocation!.longitude!),
-                    initialZoom: 14.5,
-                    minZoom: 2.0, // Minimum zoom level
-                    maxZoom: 22.0, // Maximum zoom level
-                    onMapReady: () async {
-                      pairsList = await ShareInfo(state).getShareInfo();
-                      final position = await acquireUserLocation();
-                      if (position != null) {
-                        // IMPORTANT: rebuild location layer when permissions are granted
-                        setState(() {
-                          _mapController.move(
-                              LatLng(position.latitude as double,
-                                  position.longitude as double),
-                              16);
-                        });
-                      }
-                    },
-                  ),
-                  children: [
-                    TileLayer(
-                      urlTemplate:
-                          'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-                      tileProvider: NetworkTileProvider(),
-                    ),
-                    // const AnimatedLocationLayer(),
-                    RepaintBoundary(
-                      child: AnimatedSwitcher(
-                        switchInCurve: Curves.ease,
-                        switchOutCurve: Curves.ease,
-                        duration: const Duration(milliseconds: 300),
-                        child: MapOverlay(
-                            acquireUserLocation,
-                            _mapController,
-                            context.watch<LocationShareProvider>().shareCode),
-                      ),
-                    ),
-                    MarkerLayer(markers: markersList),
-                  ],
-                );
               },
             ),
+            children: [
+              TileLayer(
+                urlTemplate:
+                    'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                tileProvider: NetworkTileProvider(),
+              ),
+              RepaintBoundary(
+                child: AnimatedSwitcher(
+                  switchInCurve: Curves.ease,
+                  switchOutCurve: Curves.ease,
+                  duration: const Duration(milliseconds: 300),
+                  child: MapOverlay(
+                    _mapController,
+                    context.watch<LocationShareProvider>().shareCode,
+                  ),
+                ),
+              ),
+              MarkerLayer(markers: markersList),
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -146,20 +150,28 @@ class _HomePageState extends State<HomePage> {
           .collection('pairs')
           .doc(document.id)
           .get();
-      if (pairsInfo.exists) {//&& pairsInfo.id != state.user_id
+      if (pairsInfo.exists) {
+        //&& pairsInfo.id != state.user_id
         Map<String, dynamic> pairsData =
             pairsInfo.data()! as Map<String, dynamic>;
         if (pairsData.values.contains(true)) {
-
           final userInfo = await getUserNameAndId(document.id);
-          String userAddress = await getUserAddress(LatLng(data['latitude'], data['longitude']));
+          String userAddress =
+              await getUserAddress(LatLng(data['latitude'], data['longitude']));
 
-          String timestamp = data['updatedAt'] != null ? Utils(DateTime.fromMillisecondsSinceEpoch(data['updatedAt']).toString()).getFormatedTimeStamp() : "Just Now";
+          String timestamp = data['updatedAt'] != null
+              ? Utils().getFormatedTimeStamp(
+                  timestamp:
+                      DateTime.fromMillisecondsSinceEpoch(data['updatedAt'])
+                          .toString())
+              : "Just Now";
 
           Marker marker = customMarker(
               LatLng(data['latitude'], data['longitude']),
               userInfo?['user_logo'],
-              userInfo?['user_name'], userAddress, timestamp.toString());
+              userInfo?['user_name'],
+              userAddress,
+              timestamp.toString());
           newMarkers.add(marker);
         }
       }
@@ -169,7 +181,8 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  Marker customMarker(LatLng position, String logo, String userName, String userAddress, String timestamp) {
+  Marker customMarker(LatLng position, String logo, String userName,
+      String userAddress, String timestamp) {
     return Marker(
       width: 40.0,
       height: 40.0,
@@ -186,7 +199,8 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Popover locationInfoPopover(String userName, String userAddress, String timestamp) {
+  Popover locationInfoPopover(
+      String userName, String userAddress, String timestamp) {
     return Popover(
       height: 275,
       child: Expanded(
@@ -273,9 +287,9 @@ class _HomePageState extends State<HomePage> {
               style: ElevatedButton.styleFrom(
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap),
               onPressed: () {},
-              child: const Text(
-                "Share location with Devesh Ukalkar",
-                style: TextStyle(
+              child: Text(
+                "Share location with $userName",
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
@@ -285,37 +299,6 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
     );
-  }
-
-  Future<loc.LocationData?> acquireUserLocation() async {
-    bool serviceEnabled;
-    loc.PermissionStatus permissionGranted;
-
-    permissionGranted = await location.hasPermission();
-    if (permissionGranted == loc.PermissionStatus.denied) {
-      permissionGranted = await location.requestPermission();
-      if (permissionGranted != loc.PermissionStatus.granted) {
-        return null;
-      }
-    }
-
-    serviceEnabled = await location.serviceEnabled();
-    if (!serviceEnabled) {
-      serviceEnabled = await location.requestService();
-      if (!serviceEnabled) {
-        return null;
-      } else {
-        updateMyLocation();
-      }
-    } else {
-      updateMyLocation();
-    }
-
-    try {
-      return await location.getLocation();
-    } catch (e) {
-      return null;
-    }
   }
 
   Future<Map<String, dynamic>?> getUserNameAndId(String userId) async {
@@ -338,6 +321,34 @@ class _HomePageState extends State<HomePage> {
         await placemarkFromCoordinates(position.latitude, position.longitude);
     Placemark place = placemarks[0];
     return "${place.street}, ${place.name}, ${place.subLocality}, ${place.locality}, ${place.administrativeArea}, ${place.postalCode}, ${place.country}";
-    
+  }
+
+  void showPopup(BuildContext ctx) {
+    showDialog<String>(
+      context: ctx,
+      builder: (BuildContext context) => WillPopScope(
+        onWillPop: () async {
+          return false;
+        },
+        child: AlertDialog(
+          title: const Text('Use Location?'),
+          content: const Text(
+              'Your Location seems to be disabled, do you want to enable it.'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                Geolocator.openLocationSettings();
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

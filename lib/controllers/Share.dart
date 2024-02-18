@@ -18,6 +18,9 @@ class ShareInfo {
       String userId = result.keys.first;
 
       if (dataExists) {
+        
+        //if (userId == state.user_id) return "You can't share you're location with yourself!!!";
+
         try {
           await FirebaseFirestore.instance
               .collection('pairs')

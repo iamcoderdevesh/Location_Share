@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:location_share/controllers/Share.dart';
+import 'package:location_share/state/state.dart';
+import 'package:location_share/widgets/snackbar.dart';
+import 'package:provider/provider.dart';
 
 class LocationCode extends StatefulWidget {
   const LocationCode({Key? key}) : super(key: key);
@@ -8,12 +12,12 @@ class LocationCode extends StatefulWidget {
 }
 
 class _LocationCodeState extends State<LocationCode> {
-  TextEditingController countryController = TextEditingController();
+  late LocationShareProvider state =
+      Provider.of<LocationShareProvider>(context, listen: false);
+  TextEditingController controller = TextEditingController();
 
   @override
   void initState() {
-    // TODO: implement initState
-    countryController.text = "+91";
     super.initState();
   }
 
@@ -57,22 +61,23 @@ class _LocationCodeState extends State<LocationCode> {
                 decoration: BoxDecoration(
                     border: Border.all(width: 1, color: Colors.grey),
                     borderRadius: BorderRadius.circular(10)),
-                child: const Row(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    SizedBox(
+                    const SizedBox(
                       width: 20,
                     ),
                     Expanded(
                       child: TextField(
+                        controller: controller,
                         keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           border: InputBorder.none,
                           hintText: "Enter Code",
                         ),
                       ),
                     ),
-                    SizedBox(
+                    const SizedBox(
                       width: 40,
                       child: Icon(
                         Icons.paste,
@@ -102,7 +107,14 @@ class _LocationCodeState extends State<LocationCode> {
                       ),
                     ),
                   ),
-                  onPressed: () {},
+                  onPressed: () async {
+                    String result = await ShareInfo(state)
+                        .saveShareInfo(code: controller.text.toString().trim());
+                    // ignore: use_build_context_synchronously
+                    ScaffoldMessenger.of(context)
+                        // ignore: use_build_context_synchronously
+                        .showSnackBar(ShowSnack(result, context).snackBar);
+                  },
                   child: const Text(
                     "Submit",
                     style: TextStyle(

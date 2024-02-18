@@ -29,7 +29,6 @@ class ProfileWidget extends StatelessWidget {
                   height: 120,
                   child: CustomMarker(
                     initial: context.watch<LocationShareProvider>().userName.toString().substring(0, 1),
-                    color: Colors.green,
                     fontSize: 48,
                   ),
                 ),
