@@ -9,8 +9,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'controllers/UserInfo.dart';
 
 void main() async {
-  SystemChrome.setSystemUIOverlayStyle(
-      SystemUiOverlayStyle(statusBarColor: Colors.grey.shade800));
+  // SystemChrome.setSystemUIOverlayStyle(
+  //     SystemUiOverlayStyle(statusBarColor: Colors.grey.shade900));
 
   WidgetsFlutterBinding.ensureInitialized();
 

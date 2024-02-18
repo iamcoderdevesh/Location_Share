@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 
 class LocationShareProvider extends ChangeNotifier {
   String user_id = '';
-  final String _shareCode = DateTime.now().millisecondsSinceEpoch.toString();
   String userName = '';
+  String userEmail = '';
   String status = '';
+  String shareCode = '';
 
   LocationShareProvider(
       {this.userName = '', this.user_id = '', this.status = 'inactive'});
@@ -12,13 +13,15 @@ class LocationShareProvider extends ChangeNotifier {
   void setUserInfo({
     required String userName,
     required String user_id,
+    required String userEmail,
     required String status,
+    required String shareCode,
   }) async {
-    this.userName = userName;
     this.user_id = user_id;
+    this.userName = userName;
+    this.userEmail = userEmail;
     this.status = status;
+    this.shareCode = shareCode;
     notifyListeners();
   }
-
-  String get shareCode => user_id;
 }

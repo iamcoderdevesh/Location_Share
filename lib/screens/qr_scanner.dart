@@ -13,7 +13,9 @@ class QRScanner extends StatefulWidget {
 }
 
 class _QRScannerState extends State<QRScanner> {
-  String qrCodeResult = "Not Yet Scanned";
+  String qrCodeResult = "";
+  late LocationShareProvider state =
+      Provider.of<LocationShareProvider>(context, listen: false);
 
   @override
   Widget build(BuildContext context) {
@@ -73,10 +75,8 @@ class _QRScannerState extends State<QRScanner> {
               onPressed: () async {
                 ScanResult codeScanner = await BarcodeScanner.scan();
                 qrCodeResult = codeScanner.rawContent;
-                String result = await ShareInfo(Provider.of<LocationShareProvider>(context,listen: false),qrCodeResult).saveShareInfo();
-                ScaffoldMessenger.of(context)
-                    // ignore: use_build_context_synchronously
-                    .showSnackBar(ShowSnack(result, context).snackBar);
+                String result = await ShareInfo(state).saveShareInfo(code: qrCodeResult);
+                ScaffoldMessenger.of(context).showSnackBar(ShowSnack(result, context).snackBar);
               },
               child: const Text(
                 "Scan your QR Code",

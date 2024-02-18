@@ -10,8 +10,11 @@ class ShareManually extends StatefulWidget {
 }
 
 class _ShareManuallyState extends State<ShareManually> {
+  
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -20,33 +23,33 @@ class _ShareManuallyState extends State<ShareManually> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                const Icon(
+                Icon(
                   Icons.location_pin,
                   size: 50.0,
-                  color: Colors.white,
+                  color: theme.colorScheme.secondary,
                 ),
                 const SizedBox(height: 20.0),
-                const Text(
+                Text(
                   'Copy the location code below and send it to a friend. When your friend pastes the location code in the app and clicks on Share, you can obtain their location.',
-                  style: TextStyle(color: Colors.white),
+                  style: TextStyle(color: theme.colorScheme.secondary),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 20.0),
                 Container(
                   padding: const EdgeInsets.all(10.0),
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.white),
+                    border: Border.all(color: theme.colorScheme.inverseSurface),
                     borderRadius: BorderRadius.circular(5.0),
                   ),
                   child: SelectableText(
                     context.watch<LocationShareProvider>().shareCode,
-                    style: TextStyle(color: Colors.white),
+                    style: TextStyle(color: theme.colorScheme.secondary),
                   ),
                 ),
                 const SizedBox(height: 20.0),
                 ElevatedButton(
                   onPressed: () {},
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.white),
+                  style: ElevatedButton.styleFrom(backgroundColor: theme.colorScheme.secondary),
                   child: const Text('COPY'),
                 ),
               ],

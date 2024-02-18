@@ -9,6 +9,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:location/location.dart' as loc;
 import 'package:location_share/controllers/Share.dart';
 import 'package:location_share/state/state.dart';
+import 'package:location_share/utils/utils.dart';
 import 'package:location_share/widgets/bottomSheetModal.dart';
 import 'package:provider/provider.dart';
 import '../widgets/location_marker.dart';
@@ -50,7 +51,7 @@ class _HomePageState extends State<HomePage> {
     }).listen((loc.LocationData newLoc) async {
       currentLocation = newLoc;
       await FirebaseFirestore.instance.collection('loc').doc(state.user_id).set(
-          {'latitude': newLoc.latitude, 'longitude': newLoc.longitude},
+          {'latitude': newLoc.latitude, 'longitude': newLoc.longitude, 'updatedAt': DateTime.now().millisecondsSinceEpoch},
           SetOptions(merge: true));
     });
   }
@@ -98,7 +99,7 @@ class _HomePageState extends State<HomePage> {
                     minZoom: 2.0, // Minimum zoom level
                     maxZoom: 22.0, // Maximum zoom level
                     onMapReady: () async {
-                      pairsList = await ShareInfo(state, "").getShareInfo();
+                      pairsList = await ShareInfo(state).getShareInfo();
                       final position = await acquireUserLocation();
                       if (position != null) {
                         // IMPORTANT: rebuild location layer when permissions are granted
@@ -126,8 +127,7 @@ class _HomePageState extends State<HomePage> {
                         child: MapOverlay(
                             acquireUserLocation,
                             _mapController,
-                            context.watch<LocationShareProvider>().shareCode,
-                            pairsList),
+                            context.watch<LocationShareProvider>().shareCode),
                       ),
                     ),
                     MarkerLayer(markers: markersList),
@@ -146,7 +146,7 @@ class _HomePageState extends State<HomePage> {
           .collection('pairs')
           .doc(document.id)
           .get();
-      if (pairsInfo.exists && pairsInfo.id != state.user_id) {
+      if (pairsInfo.exists) {//&& pairsInfo.id != state.user_id
         Map<String, dynamic> pairsData =
             pairsInfo.data()! as Map<String, dynamic>;
         if (pairsData.values.contains(true)) {
@@ -154,10 +154,12 @@ class _HomePageState extends State<HomePage> {
           final userInfo = await getUserNameAndId(document.id);
           String userAddress = await getUserAddress(LatLng(data['latitude'], data['longitude']));
 
+          String timestamp = data['updatedAt'] != null ? Utils(DateTime.fromMillisecondsSinceEpoch(data['updatedAt']).toString()).getFormatedTimeStamp() : "Just Now";
+
           Marker marker = customMarker(
               LatLng(data['latitude'], data['longitude']),
               userInfo?['user_logo'],
-              userInfo?['user_name'], userAddress);
+              userInfo?['user_name'], userAddress, timestamp.toString());
           newMarkers.add(marker);
         }
       }
@@ -167,7 +169,7 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  Marker customMarker(LatLng position, String logo, String userName, String userAddress) {
+  Marker customMarker(LatLng position, String logo, String userName, String userAddress, String timestamp) {
     return Marker(
       width: 40.0,
       height: 40.0,
@@ -176,7 +178,7 @@ class _HomePageState extends State<HomePage> {
         onTap: () {
           bottomSheetModal(
             context,
-            locationInfoPopover(userName, userAddress),
+            locationInfoPopover(userName, userAddress, timestamp),
           );
         },
         child: CustomMarker(initial: logo),
@@ -184,7 +186,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Popover locationInfoPopover(String userName, String userAddress) {
+  Popover locationInfoPopover(String userName, String userAddress, String timestamp) {
     return Popover(
       height: 275,
       child: Expanded(
@@ -230,7 +232,7 @@ class _HomePageState extends State<HomePage> {
                             width: 8,
                           ),
                           Text(
-                            "Just now",
+                            timestamp,
                             style: TextStyle(
                               color: Colors.grey[500],
                             ),

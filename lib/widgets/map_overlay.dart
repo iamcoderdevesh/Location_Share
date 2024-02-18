@@ -3,20 +3,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:location/location.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:location_share/controllers/Share.dart';
+import 'package:location_share/state/state.dart';
 import 'package:provider/provider.dart';
-import '../controllers/Share.dart';
-import '../state/state.dart';
+
 import 'bottomSheetModal.dart';
 import 'button.dart';
 import 'package:location_share/widgets/location_marker.dart';
 
 class MapOverlay extends StatefulWidget {
   final String userId;
-  final List pairsList;
   final Future<LocationData?> Function() acquireUserLocation;
   final MapController mapController;
 
-  const MapOverlay(this.acquireUserLocation, this.mapController, this.userId, this.pairsList,
+  const MapOverlay(this.acquireUserLocation, this.mapController, this.userId,
       {super.key});
 
   @override
@@ -24,7 +24,10 @@ class MapOverlay extends StatefulWidget {
 }
 
 class _MapOverlayState extends State<MapOverlay> {
-
+  late List pairsList = [];
+  late LocationShareProvider state =
+      Provider.of<LocationShareProvider>(context, listen: false);
+      
   @override
   void initState() {
     super.initState();
@@ -78,9 +81,11 @@ class _MapOverlayState extends State<MapOverlay> {
                       iconColor:
                           Theme.of(context).colorScheme.onPrimaryContainer,
                       active: false,
-                      onPressed: () {
+                      onPressed: () async {
+                        pairsList = await ShareInfo(state).getShareInfo();
                         // ignore: use_build_context_synchronously
-                        bottomSheetModal(context, shareWithInfoPopover(context));
+                        bottomSheetModal(
+                            context, shareWithInfoPopover(context));
                       },
                     ),
                   ],
@@ -95,16 +100,16 @@ class _MapOverlayState extends State<MapOverlay> {
 
   Popover shareWithInfoPopover(BuildContext context) {
     return Popover(
-      child: widget.pairsList.isEmpty
+      child: pairsList.isEmpty
           ? const Center(
-            child: Text("You haven't share location with anyone"),
-          )
+              child: Text("You haven't share location with anyone"),
+            )
           : Column(
               children: [
                 StreamBuilder(
                   stream: FirebaseFirestore.instance
                       .collection('users_info')
-                      .where('id', whereIn: widget.pairsList)
+                      .where('id', whereIn: pairsList)
                       .snapshots(includeMetadataChanges: true),
                   builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
                     if (!snapshot.hasData) {

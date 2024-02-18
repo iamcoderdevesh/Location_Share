@@ -4,6 +4,7 @@ import 'package:location_share/state/state.dart';
 
 class UserInfoHandler {
   final LocationShareProvider state;
+  final String _shareCode = DateTime.now().millisecondsSinceEpoch.toString();
 
   UserInfoHandler(this.state);
 
@@ -13,10 +14,11 @@ class UserInfoHandler {
     androidInfo = await deviceInfo.androidInfo;
 
     state.setUserInfo(
-      userName: androidInfo.host!,
-      user_id: androidInfo.id!,
-      status: 'inactive',
-    );
+        userName: androidInfo.host!,
+        user_id: androidInfo.id!,
+        userEmail: "test@mail.com",
+        status: 'inactive',
+        shareCode: _shareCode);
 
     try {
       final userDoc = FirebaseFirestore.instance
@@ -31,9 +33,11 @@ class UserInfoHandler {
 
       if (snapshot.exists) {
         state.setUserInfo(
-          userName: snapshot.data()!['name'],
           user_id: snapshot.data()!['id'],
+          userName: snapshot.data()!['name'],
+          userEmail: snapshot.data()!['email'],
           status: snapshot.data()!['status'],
+          shareCode: snapshot.data()!['share_code'],
         );
       } else {
         await setUserInfo();
@@ -43,19 +47,41 @@ class UserInfoHandler {
     }
   }
 
-  Future<void> setUserInfo() async {
+  Future<bool> setUserInfo() async {
     try {
       await FirebaseFirestore.instance
           .collection('users_info')
           .doc(state.user_id)
           .set({
-        'name': state.userName,
-        'status': 'inactive',
         'id': state.user_id,
+        'name': state.userName,
+        'email': state.userEmail,
+        'share_code': state.shareCode,
+        'status': 'inactive',
       });
-      print('success');
+      return true;
     } catch (e) {
-      print('Error from setUserInfo: $e');
+      return false;
+    }
+  }
+
+  Future<Map<String, bool>> getUserIdByShareCode(
+      {required String shareCode}) async {
+    try {
+      CollectionReference users =
+          FirebaseFirestore.instance.collection('users_info');
+      QuerySnapshot snapshot =
+          await users.where('share_code', isEqualTo: shareCode).get();
+
+      if (snapshot.docs.isNotEmpty) {
+        String userId = snapshot.docs.first.id;
+        return {userId: true};
+      } else {
+        return {"status": false};
+      }
+    } catch (e) {
+      print('from getUserInfo: $e');
+      return {"status": false};
     }
   }
 }
