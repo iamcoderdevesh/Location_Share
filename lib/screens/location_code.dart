@@ -4,6 +4,8 @@ import 'package:location_share/state/state.dart';
 import 'package:location_share/widgets/snackbar.dart';
 import 'package:provider/provider.dart';
 
+import 'home.dart';
+
 class LocationCode extends StatefulWidget {
   const LocationCode({Key? key}) : super(key: key);
 
@@ -114,6 +116,11 @@ class _LocationCodeState extends State<LocationCode> {
                     ScaffoldMessenger.of(context)
                         // ignore: use_build_context_synchronously
                         .showSnackBar(ShowSnack(result, context).snackBar);
+                    // ignore: use_build_context_synchronously
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const HomePage()));
                   },
                   child: const Text(
                     "Submit",

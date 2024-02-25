@@ -33,32 +33,49 @@ class _HomePageState extends State<HomePage> {
   bool isLoading = true;
   late List pairsList = [];
   List<Marker> markersList = [];
+  LatLng defaultPosition = const LatLng(19.074, 72.889);
   StreamSubscription<Position>? _locationSubscription;
 
   void updateMyLocation() async {
-    try {
-      Position position = await Geolocator.getCurrentPosition();
-      currentLocation = position;
-      isLoading = false;
-      setState(() {});
+    // ignore: use_build_context_synchronously
+    final position = await Utils().acquireUserLocation(context);
 
-      _locationSubscription =
-          Geolocator.getPositionStream().handleError((dynamic err) {
-        _locationSubscription?.cancel();
-      }).listen((Position newLoc) async {
-        currentLocation = newLoc;
-        await FirebaseFirestore.instance
-            .collection('loc')
-            .doc(state.user_id)
-            .set({
-          'latitude': newLoc.latitude,
-          'longitude': newLoc.longitude,
-          'updatedAt': DateTime.now().millisecondsSinceEpoch
-        }, SetOptions(merge: true));
-      });
-    } catch (e) {
-      print(e);
+    if (position != null) {
+      if (defaultPosition == const LatLng(19.074, 72.889)) {
+        defaultPosition = LatLng(position.latitude, position.longitude);
+        setState(() {
+          _mapController.move(
+            defaultPosition,
+            16,
+          );
+        });
+      }
+      if (state.locationStatus) {
+        try {
+          Position position = await Geolocator.getCurrentPosition();
+          currentLocation = position;
+          setState(() {});
+
+          _locationSubscription =
+              Geolocator.getPositionStream().handleError((dynamic err) {
+            _locationSubscription?.cancel();
+          }).listen((Position newLoc) async {
+            currentLocation = newLoc;
+            await FirebaseFirestore.instance
+                .collection('loc')
+                .doc(state.user_id)
+                .set({
+              'latitude': newLoc.latitude,
+              'longitude': newLoc.longitude,
+              'updatedAt': DateTime.now().millisecondsSinceEpoch
+            }, SetOptions(merge: true));
+          });
+        } catch (e) {
+          print(e);
+        }
+      }
     }
+    return;
   }
 
   @override
@@ -87,34 +104,27 @@ class _HomePageState extends State<HomePage> {
           if (snapshot.hasData) {
             getMarkers(snapshot.data!);
           }
-          LatLng? initialCenter;
           return FlutterMap(
             mapController: _mapController,
             options: MapOptions(
               interactionOptions: const InteractionOptions(
                 enableMultiFingerGestureRace: true,
               ),
-              initialCenter: initialCenter ??
-                  const LatLng(0, 0), // Use a default location if currentLocation is null
+              initialCenter: currentLocation != null
+                  ? LatLng(
+                      currentLocation!.latitude, currentLocation!.longitude)
+                  : const LatLng(19.074, 72.889),
               initialZoom: 14.5,
               minZoom: 2.0,
               maxZoom: 22.0,
               onMapReady: () async {
                 pairsList = await ShareInfo(state).getShareInfo();
-                // ignore: use_build_context_synchronously
-                final position = await Utils().acquireUserLocation(context);
-                if (position != null) {
-                  setState(() {
-                    _mapController.move(
-                      LatLng(position.latitude, position.longitude),
-                      16,
-                    );
-                  });
-                }
-                else {
-                  // ignore: use_build_context_synchronously
-                  showPopup(context);
-                }
+                setState(() {
+                  _mapController.move(
+                    defaultPosition,
+                    16,
+                  );
+                });
               },
             ),
             children: [
@@ -150,29 +160,31 @@ class _HomePageState extends State<HomePage> {
           .collection('pairs')
           .doc(document.id)
           .get();
-      if (pairsInfo.exists) {
-        //&& pairsInfo.id != state.user_id
+      if (pairsInfo.exists && pairsInfo.id != state.user_id) {
         Map<String, dynamic> pairsData =
             pairsInfo.data()! as Map<String, dynamic>;
         if (pairsData.values.contains(true)) {
           final userInfo = await getUserNameAndId(document.id);
-          String userAddress =
-              await getUserAddress(LatLng(data['latitude'], data['longitude']));
+          bool status = userInfo?['status'];
+          if (status == true) {
+            String userAddress = await getUserAddress(
+                LatLng(data['latitude'], data['longitude']));
 
-          String timestamp = data['updatedAt'] != null
-              ? Utils().getFormatedTimeStamp(
-                  timestamp:
-                      DateTime.fromMillisecondsSinceEpoch(data['updatedAt'])
-                          .toString())
-              : "Just Now";
+            String timestamp = data['updatedAt'] != null
+                ? Utils().getFormatedTimeStamp(
+                    timestamp:
+                        DateTime.fromMillisecondsSinceEpoch(data['updatedAt'])
+                            .toString())
+                : "Just Now";
 
-          Marker marker = customMarker(
-              LatLng(data['latitude'], data['longitude']),
-              userInfo?['user_logo'],
-              userInfo?['user_name'],
-              userAddress,
-              timestamp.toString());
-          newMarkers.add(marker);
+            Marker marker = customMarker(
+                LatLng(data['latitude'], data['longitude']),
+                userInfo?['user_logo'],
+                userInfo?['user_name'],
+                userAddress,
+                timestamp.toString());
+            newMarkers.add(marker);
+          }
         }
       }
     }
@@ -192,6 +204,10 @@ class _HomePageState extends State<HomePage> {
           bottomSheetModal(
             context,
             locationInfoPopover(userName, userAddress, timestamp),
+          );
+          _mapController.move(
+            position,
+            16,
           );
         },
         child: CustomMarker(initial: logo),
@@ -310,7 +326,7 @@ class _HomePageState extends State<HomePage> {
         'id': snapshot.data()!['id'],
         'user_logo': snapshot.data()!['name'].toString().substring(0, 1),
         'user_name': snapshot.data()!['name'],
-        'status': snapshot.data()!['status'],
+        'status': snapshot.data()!['locStatus'],
       };
     }
     return null;

@@ -1,6 +1,8 @@
 import 'package:barcode_scan2/barcode_scan2.dart';
 import 'package:flutter/material.dart';
 import 'package:location_share/controllers/Share.dart';
+import 'package:location_share/screens/home.dart';
+import 'package:location_share/widgets/bottomNavBar.dart';
 import 'package:provider/provider.dart';
 import '../state/state.dart';
 import '../widgets/snackbar.dart';
@@ -75,8 +77,15 @@ class _QRScannerState extends State<QRScanner> {
               onPressed: () async {
                 ScanResult codeScanner = await BarcodeScanner.scan();
                 qrCodeResult = codeScanner.rawContent;
-                String result = await ShareInfo(state).saveShareInfo(code: qrCodeResult);
-                ScaffoldMessenger.of(context).showSnackBar(ShowSnack(result, context).snackBar);
+                String result =
+                    await ShareInfo(state).saveShareInfo(code: qrCodeResult);
+                // ignore: use_build_context_synchronously
+                ScaffoldMessenger.of(context)
+                    // ignore: use_build_context_synchronously
+                    .showSnackBar(ShowSnack(result, context).snackBar);
+                // ignore: use_build_context_synchronously
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (context) => const BottoNavBar()));
               },
               child: const Text(
                 "Scan your QR Code",

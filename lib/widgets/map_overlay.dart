@@ -85,6 +85,7 @@ class _MapOverlayState extends State<MapOverlay> {
                         pairsList = await ShareInfo(state).getShareInfo();
                         // ignore: use_build_context_synchronously
                         bottomSheetModal(
+                            // ignore: use_build_context_synchronously
                             context, shareWithInfoPopover(context));
                       },
                     ),
@@ -204,7 +205,7 @@ class _MapOverlayState extends State<MapOverlay> {
                   const SizedBox(
                     width: 200.0,
                     child: Text(
-                      "22 B, Karade kh., Maharashtra 410220, India",
+                      "", //TODO:- Fetch User Address here
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 14,

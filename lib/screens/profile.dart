@@ -83,15 +83,18 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   onPressed: () async {
                     state.setUserInfo(
-                        userName: name,
-                        user_id: state.user_id,
-                        userEmail: email,
-                        status: state.status,
-                        shareCode: state.shareCode,
-                        color: state.color);
+                      userName: name,
+                      user_id: state.user_id,
+                      userEmail: email,
+                      locationStatus: state.locationStatus,
+                      shareCode: state.shareCode,
+                      color: state.color,
+                      updateInterval: state.locInterval,
+                    );
                     if (await UserInfoHandler(state).setUserInfo()) {
                       // ignore: use_build_context_synchronously
                       ScaffoldMessenger.of(context).showSnackBar(
+                          // ignore: use_build_context_synchronously
                           ShowSnack("Profile Updated Successfully!!!", context)
                               .snackBar);
                     }

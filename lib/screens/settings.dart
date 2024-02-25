@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:location_share/screens/location_settings.dart';
+import 'package:location_share/screens/themeSettings.dart';
 import 'package:location_share/widgets/location_marker.dart';
 import 'package:location_share/widgets/ProfileWidget.dart';
 
@@ -20,32 +22,44 @@ class _SettingsPageState extends State<SettingsPage> {
         centerTitle: true,
         backgroundColor: theme.canvasColor,
         foregroundColor: theme.colorScheme.secondary,
-        title: const Text("Settings",  style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text("Settings",
+            style: TextStyle(fontWeight: FontWeight.bold)),
       ),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
-        child: Container(
-          padding: const EdgeInsets.only(left: 20, right: 20),
-          child: Column(
-            children: [
-              const ProfileWidget(),
-              const SizedBox(
-                height: 30,
-              ),
-              ProfileMenu(theme: theme,title: "Theme", icon: Icons.dark_mode),
-              ProfileMenu(theme: theme,title: "Location Settings", icon: Icons.location_on)      
-            ],
-          ),
+        child: Column(
+          children: [
+            const ProfileWidget(),
+            const SizedBox(
+              height: 30,
+            ),
+            ProfileMenu(
+              theme: theme,
+              title: "Theme",
+              icon: Icons.dark_mode,
+              route: (BuildContext) {
+                return const ThemeSettings();
+              },
+            ),
+            ProfileMenu(
+              theme: theme,
+              title: "Location Settings",
+              icon: Icons.location_on,
+              route: (BuildContext) {
+                return const LocationSettings();
+              },
+            )
+          ],
         ),
       ),
     );
   }
 
-  Container ProfileMenu({
-    required ThemeData theme,
-    required String title,
-    required IconData icon,
-  }) {
+  Container ProfileMenu(
+      {required ThemeData theme,
+      required String title,
+      required IconData icon,
+      required Widget Function(BuildContext) route}) {
     return Container(
       padding: const EdgeInsets.only(top: 8, bottom: 8),
       decoration: BoxDecoration(
@@ -78,6 +92,10 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           child: const Icon(Icons.chevron_right, size: 18),
         ),
+        onTap: () {
+          Navigator.push(context,
+              MaterialPageRoute(builder: route));
+        },
       ),
     );
   }

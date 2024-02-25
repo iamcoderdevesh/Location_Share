@@ -20,9 +20,10 @@ class UserInfoHandler {
         userName: androidInfo.host!,
         user_id: androidInfo.id!,
         userEmail: "test@mail.com",
-        status: 'inactive',
+        locationStatus: state.locationStatus,
         color: color,
-        shareCode: _shareCode);
+        shareCode: _shareCode, 
+        updateInterval: state.locInterval);
 
     try {
       final userDoc = FirebaseFirestore.instance
@@ -40,9 +41,10 @@ class UserInfoHandler {
           user_id: snapshot.data()!['id'],
           userName: snapshot.data()!['name'],
           userEmail: snapshot.data()!['email'],
-          status: snapshot.data()!['status'],
+          locationStatus: snapshot.data()!['locStatus'],
           shareCode: snapshot.data()!['share_code'],
           color: snapshot.data()!['color'],
+          updateInterval: snapshot.data()!['locInterval']
         );
       } else {
         await setUserInfo();
@@ -62,11 +64,11 @@ class UserInfoHandler {
         'name': state.userName,
         'email': state.userEmail,
         'share_code': state.shareCode,
-        'status': 'inactive',
+        'locStatus': state.locationStatus,
+        'locInterval': state.locInterval,
         'color': color,
         'joined_on': DateTime.now().millisecondsSinceEpoch,
       });
-      print("success");
       return true;
     } catch (e) {
       return false;
@@ -92,4 +94,33 @@ class UserInfoHandler {
       return {"status": false};
     }
   }
+
+  Future<bool> updateLocInterval() async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('users_info')
+          .doc(state.user_id)
+          .update({
+        'locUpdateInterval': state.locInterval
+      });
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<bool> updateLocStatus() async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('users_info')
+          .doc(state.user_id)
+          .update({
+        'locStatus': state.locationStatus
+      });
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
 }
