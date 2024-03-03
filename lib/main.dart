@@ -1,8 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:location_share/screens/splash_screen.dart';
 import 'package:location_share/state/state.dart';
-import 'package:location_share/themes/theme.dart';
-import 'package:location_share/widgets/bottomNavbar.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'controllers/UserInfo.dart';
@@ -35,6 +34,7 @@ class MainApp extends StatefulWidget {
   const MainApp({Key? key}) : super(key: key);
 
   @override
+  // ignore: library_private_types_in_public_api
   _MyAppState createState() => _MyAppState();
 }
 
@@ -48,11 +48,18 @@ class _MyAppState extends State<MainApp> {
 
   @override
   Widget build(BuildContext context) {
+    var brightness = MediaQuery.of(context).platformBrightness;
+    bool isDarkMode = brightness == Brightness.dark;
+    late LocationShareProvider state =
+        Provider.of<LocationShareProvider>(context, listen: false);
+    if (state.theme == 'sys') {
+      state.toggleTheme(mode: isDarkMode ? 'dark' : 'light', isSys: 'sys');
+    }
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: lightTheme,
-      darkTheme: darkTheme,
-      home: const BottoNavBar(),
+      theme: Provider.of<LocationShareProvider>(context).themeData,
+      home: const SplashScreen(),
     );
   }
 }

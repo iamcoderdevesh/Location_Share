@@ -98,7 +98,7 @@ class _HomePageState extends State<HomePage> {
         builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
-              child: Text("Loading"),
+              child: CircularProgressIndicator(),
             );
           }
           if (snapshot.hasData) {
@@ -167,8 +167,8 @@ class _HomePageState extends State<HomePage> {
           final userInfo = await getUserNameAndId(document.id);
           bool status = userInfo?['status'];
           if (status == true) {
-            String userAddress = await getUserAddress(
-                LatLng(data['latitude'], data['longitude']));
+            String userAddress = await Utils()
+                .getUserAddress(LatLng(data['latitude'], data['longitude']));
 
             String timestamp = data['updatedAt'] != null
                 ? Utils().getFormatedTimeStamp(
@@ -330,13 +330,6 @@ class _HomePageState extends State<HomePage> {
       };
     }
     return null;
-  }
-
-  Future<String> getUserAddress(LatLng position) async {
-    List<Placemark> placemarks =
-        await placemarkFromCoordinates(position.latitude, position.longitude);
-    Placemark place = placemarks[0];
-    return "${place.street}, ${place.name}, ${place.subLocality}, ${place.locality}, ${place.administrativeArea}, ${place.postalCode}, ${place.country}";
   }
 
   void showPopup(BuildContext ctx) {

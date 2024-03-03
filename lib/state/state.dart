@@ -1,16 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:location_share/themes/theme.dart';
 
 class LocationShareProvider extends ChangeNotifier {
+  late ThemeData _themeData;
+
   String user_id = '',
       userName = '',
       userEmail = '',
       shareCode = '',
       color = '',
-      locInterval = '';
+      locInterval = '',
+      theme = 'sys';
   bool locationStatus = false;
 
   LocationShareProvider(
       {this.userName = '', this.user_id = '', this.locationStatus = false});
+
+  ThemeData get themeData => _themeData;
 
   void setUserInfo({
     required String userName,
@@ -39,5 +45,23 @@ class LocationShareProvider extends ChangeNotifier {
   void setUpdateInterval({required String updateInterval}) {
     locInterval = updateInterval;
     notifyListeners();
+  }
+
+  set themeData(ThemeData themeData) {
+    _themeData = themeData;
+    notifyListeners();
+  }
+
+  void toggleTheme({required String mode, String? isSys}) {
+    if (mode == 'dark' && isSys == null) {
+      theme = mode;
+      themeData = darkTheme;
+    } else if (mode == 'light' && isSys == null) {
+      theme = mode;
+      themeData = lightTheme;
+    } else {
+      themeData = mode == 'light' ? lightTheme : darkTheme;
+      theme = isSys!;
+    }
   }
 }

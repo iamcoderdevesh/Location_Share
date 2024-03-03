@@ -24,6 +24,14 @@ class _ThemeSettingsState extends State<ThemeSettings> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    String themeStatus = Provider.of<LocationShareProvider>(context).theme;
+    if (themeStatus == 'light') {
+      themeValue = ThemeValues.lightTheme;
+    } else if (themeStatus == 'dark') {
+      themeValue = ThemeValues.darkTheme;
+    } else {
+      themeValue = ThemeValues.systemDefault;
+    }
 
     return Scaffold(
       appBar: appBar(theme, context, "Theme Settings"),
@@ -40,6 +48,8 @@ class _ThemeSettingsState extends State<ThemeSettings> {
                 onChanged: (ThemeValues? value) {
                   setState(() {
                     themeValue = value;
+                    Provider.of<LocationShareProvider>(context, listen: false)
+                        .toggleTheme(mode: 'light');
                   });
                 },
               ),
@@ -50,6 +60,8 @@ class _ThemeSettingsState extends State<ThemeSettings> {
                 onChanged: (ThemeValues? value) {
                   setState(() {
                     themeValue = value;
+                    Provider.of<LocationShareProvider>(context, listen: false)
+                        .toggleTheme(mode: 'dark');
                   });
                 },
               ),
@@ -60,6 +72,11 @@ class _ThemeSettingsState extends State<ThemeSettings> {
                 onChanged: (ThemeValues? value) {
                   setState(() {
                     themeValue = value;
+                    var brightness = MediaQuery.of(context).platformBrightness;
+                    bool isDarkMode = brightness == Brightness.dark;
+                    Provider.of<LocationShareProvider>(context, listen: false)
+                        .toggleTheme(
+                            mode: isDarkMode ? 'dark' : 'light', isSys: 'sys');
                   });
                 },
               ),

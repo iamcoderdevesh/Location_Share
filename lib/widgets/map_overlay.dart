@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:location_share/controllers/Location.dart';
 import 'package:location_share/controllers/Share.dart';
 import 'package:location_share/state/state.dart';
 import 'package:location_share/utils/utils.dart';
@@ -16,8 +17,7 @@ class MapOverlay extends StatefulWidget {
   final String userId;
   final MapController mapController;
 
-  const MapOverlay(this.mapController, this.userId,
-      {super.key});
+  const MapOverlay(this.mapController, this.userId, {super.key});
 
   @override
   _MapOverlayState createState() => _MapOverlayState();
@@ -27,7 +27,7 @@ class _MapOverlayState extends State<MapOverlay> {
   late List pairsList = [];
   late LocationShareProvider state =
       Provider.of<LocationShareProvider>(context, listen: false);
-      
+
   @override
   void initState() {
     super.initState();
@@ -61,7 +61,8 @@ class _MapOverlayState extends State<MapOverlay> {
                           Theme.of(context).colorScheme.onPrimaryContainer,
                       active: false,
                       onPressed: () async {
-                        final position = await Utils().acquireUserLocation(context);
+                        final position =
+                            await Utils().acquireUserLocation(context);
                         if (position != null) {
                           widget.mapController.move(
                               LatLng(position.latitude as double,
@@ -86,7 +87,8 @@ class _MapOverlayState extends State<MapOverlay> {
                         // ignore: use_build_context_synchronously
                         bottomSheetModal(
                             // ignore: use_build_context_synchronously
-                            context, shareWithInfoPopover(context));
+                            context,
+                            shareWithInfoPopover(context));
                       },
                     ),
                   ],
@@ -112,15 +114,34 @@ class _MapOverlayState extends State<MapOverlay> {
                       .collection('users_info')
                       .where('id', whereIn: pairsList)
                       .snapshots(includeMetadataChanges: true),
-                  builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                  builder: (context,
+                      AsyncSnapshot<QuerySnapshot<Object?>> snapshot) {
                     if (!snapshot.hasData) {
                       return const Center(
                         child: CircularProgressIndicator(),
                       );
                     }
-                    return _buildListItem(context, snapshot);
+                    return FutureBuilder(
+                      future: Future.wait(snapshot.data!.docs
+                          .map((doc) => _buildListItem(context, snapshot))),
+                      builder:
+                          (context, AsyncSnapshot<List<Widget>> listSnapshot) {
+                        if (listSnapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        } else if (listSnapshot.hasError) {
+                          return Text('Error: ${listSnapshot.error}');
+                        } else {
+                          return Column(
+                            children: listSnapshot.data!,
+                          );
+                        }
+                      },
+                    );
                   },
-                )
+                ),
 
                 // _buildListItem(
                 //   context,
@@ -160,9 +181,10 @@ class _MapOverlayState extends State<MapOverlay> {
     );
   }
 
-  Widget _buildListItem(
-      BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+  Future<Widget> _buildListItem(
+      BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) async {
     final theme = Theme.of(context);
+
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: 8.0,
@@ -177,59 +199,84 @@ class _MapOverlayState extends State<MapOverlay> {
         ),
       ),
       child: Column(
-        children: snapshot.data!.docs.map((doc) {
-          return Row(
-            mainAxisSize: MainAxisSize.max,
-            children: [
-              SizedBox(
-                height: 40.0,
-                width: 40.0,
-                child: CustomMarker(
-                  initial: doc['name'].toString().substring(0, 1),
+        children: await Future.wait(snapshot.data!.docs.map((doc) async {
+          Map<String, String>? loc =
+              await LocationInfo().getLocationInfo(userId: doc.id);
+          String address = "";
+          if (loc["status"] == "true") {
+            address = await Utils().getUserAddress(LatLng(
+                double.parse(loc["latitude"]!),
+                double.parse(loc["longitude"]!)));
+          }
+          // ignore: use_build_context_synchronously
+          return GestureDetector(
+              onTap: () {
+                if (loc["status"] == "true") {
+                  widget.mapController.move(
+                      LatLng(double.parse(loc["latitude"]!),
+                          double.parse(loc["longitude"]!)),
+                      16);
+                  Navigator.of(context).pop();
+                }
+              },
+              // ignore: use_build_context_synchronously
+              child: locationSharedList(context, doc, address));
+        })),
+      ),
+    );
+  }
+
+  Row locationSharedList(
+      BuildContext context, DocumentSnapshot doc, String address) {
+    return Row(
+      mainAxisSize: MainAxisSize.max,
+      children: [
+        SizedBox(
+          height: 40.0,
+          width: 40.0,
+          child: CustomMarker(
+            initial: doc['name'].toString().substring(0, 1),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              doc['name'],
+              style: const TextStyle(
+                height: 1.5,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: 200.0,
+              child: Text(
+                address,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
                 ),
               ),
-              const SizedBox(width: 10),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    doc['name'],
-                    style: const TextStyle(
-                      height: 1.5,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const SizedBox(
-                    width: 200.0,
-                    child: Text(
-                      "", //TODO:- Fetch User Address here
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "Can see your location",
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              "Can see your location",
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w400,
               ),
-              const Spacer(),
-              const Icon(Icons.chevron_right),
-            ],
-          );
-        }).toList(),
-      ),
+            ),
+          ],
+        ),
+        const Spacer(),
+        const Icon(Icons.chevron_right),
+      ],
     );
   }
 }
