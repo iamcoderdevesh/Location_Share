@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:location_share/controllers/Share.dart';
+import 'package:location_share/main.dart';
 import 'package:location_share/state/state.dart';
 import 'package:location_share/widgets/snackbar.dart';
 import 'package:provider/provider.dart';
@@ -110,17 +111,17 @@ class _LocationCodeState extends State<LocationCode> {
                     ),
                   ),
                   onPressed: () async {
-                    String result = await ShareInfo(state)
-                        .saveShareInfo(code: controller.text.toString().trim());
-                    // ignore: use_build_context_synchronously
-                    ScaffoldMessenger.of(context)
-                        // ignore: use_build_context_synchronously
-                        .showSnackBar(ShowSnack(result, context).snackBar);
-                    // ignore: use_build_context_synchronously
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => const HomePage()));
+                    String code = controller.text.toString().trim();
+                    if (code != "") {
+                      String result =
+                          await ShareInfo(state).saveShareInfo(code: code);
+                      // ignore: use_build_context_synchronously
+                      ScaffoldMessenger.of(context)
+                          // ignore: use_build_context_synchronously
+                          .showSnackBar(ShowSnack(result, context).snackBar);
+                      // ignore: use_build_context_synchronously
+                      Navigator.pop(context);
+                    }
                   },
                   child: const Text(
                     "Submit",

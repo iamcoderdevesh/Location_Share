@@ -73,6 +73,7 @@ class _BottoNavBarState extends State<BottoNavBar> {
             leading: const Icon(Icons.record_voice_over),
             title: const Text('Share Location'),
             onTap: () {
+              Navigator.pop(context);
               Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -83,6 +84,7 @@ class _BottoNavBarState extends State<BottoNavBar> {
             leading: const Icon(Icons.call_received),
             title: const Text('Request Location'),
             onTap: () {
+              Navigator.pop(context);
               Navigator.push(
                   context,
                   MaterialPageRoute(

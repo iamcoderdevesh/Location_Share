@@ -1,14 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:location_share/controllers/Location.dart';
 import 'package:location_share/controllers/Share.dart';
 import 'package:location_share/state/state.dart';
 import 'package:location_share/utils/utils.dart';
 import 'package:provider/provider.dart';
-
 import 'bottomSheetModal.dart';
 import 'button.dart';
 import 'package:location_share/widgets/location_marker.dart';

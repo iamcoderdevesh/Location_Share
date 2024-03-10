@@ -15,7 +15,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
+    // SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
     Future.delayed(const Duration(seconds: 3), () {
       Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const BottoNavBar()));
@@ -24,9 +24,8 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   void dispose() {
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: SystemUiOverlay.values);
+    // SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: SystemUiOverlay.values);
     super.dispose();
-
   }
 
   @override
@@ -35,7 +34,7 @@ class _SplashScreenState extends State<SplashScreen>
     bool isDarkMode = brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDarkMode ? Colors.grey.shade700 : Colors.grey.shade200,
+      backgroundColor: isDarkMode ? Colors.grey.shade600 : Colors.grey.shade200,
       body: SafeArea(
         child: Center(
             child: Lottie.asset(!isDarkMode

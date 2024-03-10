@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'dart:math';
-import 'package:geolocator/geolocator.dart';
+import 'package:location/location.dart' as loc;
 
 class Utils {
   Utils();
@@ -54,22 +54,29 @@ class Utils {
     return colorString;
   }
 
-  Future<Position?> acquireUserLocation(BuildContext context) async {
-    LocationPermission permission;
+  Future<loc.LocationData?> acquireUserLocation(BuildContext context) async {
+    final loc.Location location = loc.Location();
+    bool serviceEnabled;
+    loc.PermissionStatus permissionGranted;
 
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied ||
-        permission == LocationPermission.deniedForever) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
+    permissionGranted = await location.hasPermission();
+    if (permissionGranted == loc.PermissionStatus.denied) {
+      permissionGranted = await location.requestPermission();
+      if (permissionGranted != loc.PermissionStatus.granted) {
+        return null;
+      }
+    }
+
+    serviceEnabled = await location.serviceEnabled();
+    if (!serviceEnabled) {
+      serviceEnabled = await location.requestService();
+      if (!serviceEnabled) {
         return null;
       }
     }
 
     try {
-      return await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.best);
+      return await location.getLocation();
     } catch (e) {
       return null;
     }

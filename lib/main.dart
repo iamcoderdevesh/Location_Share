@@ -5,10 +5,14 @@ import 'package:location_share/state/state.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'controllers/UserInfo.dart';
+import 'package:location/location.dart' as loc;
 
 void main() async {
   // SystemChrome.setSystemUIOverlayStyle(
   //     SystemUiOverlayStyle(statusBarColor: Colors.grey.shade900));
+  final loc.Location location = loc.Location();
+  location.enableBackgroundMode(enable: true);
+  location.changeSettings(interval: 10, accuracy: loc.LocationAccuracy.high);
 
   WidgetsFlutterBinding.ensureInitialized();
 

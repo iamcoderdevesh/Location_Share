@@ -1,10 +1,8 @@
 import 'dart:async';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:animated_location_indicator/animated_location_indicator.dart';
-import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:location_share/controllers/Share.dart';
@@ -14,6 +12,7 @@ import 'package:location_share/widgets/bottomSheetModal.dart';
 import 'package:provider/provider.dart';
 import '../widgets/location_marker.dart';
 import '../widgets/map_overlay.dart';
+import 'package:location/location.dart' as loc;
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -26,15 +25,16 @@ class _HomePageState extends State<HomePage> {
   final _mapController = MapController();
   final Stream<QuerySnapshot> _locStream =
       FirebaseFirestore.instance.collection('loc').snapshots();
-  final Geolocator geolocator = Geolocator();
+  late LocationSettings locationSettings;
   late LocationShareProvider state =
       Provider.of<LocationShareProvider>(context, listen: false);
-  Position? currentLocation;
+  final loc.Location location = loc.Location();
+  loc.LocationData? currentLocation;
   bool isLoading = true;
   late List pairsList = [];
   List<Marker> markersList = [];
   LatLng defaultPosition = const LatLng(19.074, 72.889);
-  StreamSubscription<Position>? _locationSubscription;
+  StreamSubscription<loc.LocationData>? _locationSubscription;
 
   void updateMyLocation() async {
     // ignore: use_build_context_synchronously
@@ -42,7 +42,7 @@ class _HomePageState extends State<HomePage> {
 
     if (position != null) {
       if (defaultPosition == const LatLng(19.074, 72.889)) {
-        defaultPosition = LatLng(position.latitude, position.longitude);
+        defaultPosition = LatLng(position.latitude as double, position.longitude as double);
         setState(() {
           _mapController.move(
             defaultPosition,
@@ -52,14 +52,15 @@ class _HomePageState extends State<HomePage> {
       }
       if (state.locationStatus) {
         try {
-          Position position = await Geolocator.getCurrentPosition();
-          currentLocation = position;
-          setState(() {});
+          location.getLocation().then((location) {
+              currentLocation = location;
+            },
+          );
 
           _locationSubscription =
-              Geolocator.getPositionStream().handleError((dynamic err) {
+              location.onLocationChanged.handleError((dynamic err) {
             _locationSubscription?.cancel();
-          }).listen((Position newLoc) async {
+          }).listen((loc.LocationData newLoc) async {
             currentLocation = newLoc;
             await FirebaseFirestore.instance
                 .collection('loc')
@@ -87,6 +88,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void dispose() {
     _mapController.dispose();
+    // _locationSubscription?.cancel();
     super.dispose();
   }
 
@@ -112,7 +114,7 @@ class _HomePageState extends State<HomePage> {
               ),
               initialCenter: currentLocation != null
                   ? LatLng(
-                      currentLocation!.latitude, currentLocation!.longitude)
+                      currentLocation!.latitude!, currentLocation!.longitude!)
                   : const LatLng(19.074, 72.889),
               initialZoom: 14.5,
               minZoom: 2.0,
