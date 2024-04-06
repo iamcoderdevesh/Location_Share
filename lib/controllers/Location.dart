@@ -1,4 +1,9 @@
+import 'dart:ffi';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:location/location.dart';
+import 'package:location_share/utils/utils.dart';
 
 class LocationInfo {
   LocationInfo();
@@ -24,5 +29,27 @@ class LocationInfo {
     } catch (e) {
       return {"status": "false"};
     }
+  }
+
+  Future<void> updateLocationInFirebase({required double? latitude, required double? longitude}) async {
+    try {
+      await Firebase.initializeApp();
+      Map<String, String>? deviceInfo = await Utils().getDeveiceInfo();
+      // final location = await Location().getLocation();
+      // if (location != null) {
+        await FirebaseFirestore.instance
+            .collection('loc')
+            .doc(deviceInfo['id'])
+            .set({
+          'latitude': latitude,
+          'longitude': longitude,
+          'updatedAt': DateTime.now().millisecondsSinceEpoch
+        }, SetOptions(merge: true));
+        print('success location');
+      // }
+    } catch (e) {
+      print('from updateLocationInFirebase: $e');
+    }
+    print('from updateLocationInFirebase');
   }
 }

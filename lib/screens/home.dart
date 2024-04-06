@@ -5,6 +5,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:animated_location_indicator/animated_location_indicator.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:location_share/controllers/Location.dart';
 import 'package:location_share/controllers/Share.dart';
 import 'package:location_share/state/state.dart';
 import 'package:location_share/utils/utils.dart';
@@ -62,14 +63,7 @@ class _HomePageState extends State<HomePage> {
             _locationSubscription?.cancel();
           }).listen((loc.LocationData newLoc) async {
             currentLocation = newLoc;
-            await FirebaseFirestore.instance
-                .collection('loc')
-                .doc(state.user_id)
-                .set({
-              'latitude': newLoc.latitude,
-              'longitude': newLoc.longitude,
-              'updatedAt': DateTime.now().millisecondsSinceEpoch
-            }, SetOptions(merge: true));
+            await LocationInfo().updateLocationInFirebase(latitude: newLoc.latitude, longitude: newLoc.longitude);
           });
         } catch (e) {
           print(e);

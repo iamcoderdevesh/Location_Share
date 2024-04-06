@@ -2,8 +2,10 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:location_share/controllers/UserInfo.dart';
 import 'package:location_share/screens/updateLocationTime.dart';
+import 'package:location_share/widgets/snackbar.dart';
 import 'package:provider/provider.dart';
 import '../state/state.dart';
+import 'package:location_share/services/backgroundLocation.dart';
 
 class LocationSettings extends StatefulWidget {
   const LocationSettings({super.key});
@@ -16,6 +18,8 @@ class _LocationSettingsState extends State<LocationSettings> {
   late LocationShareProvider state =
       Provider.of<LocationShareProvider>(context, listen: false);
   late bool _locationSwitch = state.locationStatus;
+  late bool _backgroundSwitch = state.backgroundStatus;
+  bool _enabled = true;
 
   @override
   void initState() {
@@ -49,6 +53,7 @@ class _LocationSettingsState extends State<LocationSettings> {
                 await setLocStatus();
               },
             ),
+            if (_locationSwitch) backgroundLocationWidget(theme),
             // listMenu(
             //   theme: theme,
             //   title: "Real Time Location",
@@ -69,6 +74,23 @@ class _LocationSettingsState extends State<LocationSettings> {
           ],
         ),
       ),
+    );
+  }
+
+  Container backgroundLocationWidget(ThemeData theme) {
+    return listMenu(
+      theme: theme,
+      title: "Background Location Sharing",
+      subtitle: "Enable/Disable Background Location Sharing",
+      widget: CupertinoSwitch(
+        value: _backgroundSwitch,
+        onChanged: (value) async {
+          await setBackgroundStatus();
+        },
+      ),
+      onTap: () async {
+        await setBackgroundStatus();
+      },
     );
   }
 
@@ -119,5 +141,17 @@ class _LocationSettingsState extends State<LocationSettings> {
     setState(() {
       _locationSwitch = state.locationStatus;
     });
+  }
+
+  Future<void> setBackgroundStatus() async {
+    _backgroundSwitch = _backgroundSwitch ? false : true;
+    state.setBackgroundStatus(status: _backgroundSwitch);
+    await UserInfoHandler(state).updateLocStatus();
+    setState(() {
+      _backgroundSwitch = state.backgroundStatus;
+    });
+    _backgroundSwitch
+        ? BackgroundLocation().onStart()
+        : BackgroundLocation().onStop();
   }
 }

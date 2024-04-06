@@ -1,18 +1,15 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:location_share/screens/splash_screen.dart';
+import 'package:location_share/services/backgroundLocation.dart';
 import 'package:location_share/state/state.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'controllers/UserInfo.dart';
-import 'package:location/location.dart' as loc;
 
 void main() async {
   // SystemChrome.setSystemUIOverlayStyle(
   //     SystemUiOverlayStyle(statusBarColor: Colors.grey.shade900));
-  final loc.Location location = loc.Location();
-  location.enableBackgroundMode(enable: true);
-  location.changeSettings(interval: 10, accuracy: loc.LocationAccuracy.high);
 
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -46,8 +43,12 @@ class _MyAppState extends State<MainApp> {
   @override
   void initState() {
     super.initState();
-    UserInfoHandler(Provider.of<LocationShareProvider>(context, listen: false))
-        .handleUserInfo();
+    // final loc.Location location = loc.Location();
+    // location.enableBackgroundMode(enable: true);
+    // location.changeSettings(interval: 10, accuracy: loc.LocationAccuracy.high);
+    late LocationShareProvider state = Provider.of<LocationShareProvider>(context, listen: false);
+    UserInfoHandler(state).handleUserInfo();
+    BackgroundLocation().initState();
   }
 
   @override

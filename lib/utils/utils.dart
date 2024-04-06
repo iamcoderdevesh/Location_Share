@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'dart:math';
 import 'package:location/location.dart' as loc;
+import 'package:device_info_plus/device_info_plus.dart';
 
 class Utils {
   Utils();
@@ -87,5 +88,20 @@ class Utils {
         await placemarkFromCoordinates(position.latitude, position.longitude);
     Placemark place = placemarks[0];
     return "${place.street}, ${place.name}, ${place.subLocality}, ${place.locality}, ${place.administrativeArea}, ${place.postalCode}, ${place.country}";
+  }
+
+  Future<Map<String, String>> getDeveiceInfo() async {
+    try {
+      late AndroidDeviceInfo androidInfo;
+      DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+      androidInfo = await deviceInfo.androidInfo;
+      return {
+        "host": androidInfo.host.toString(),
+        "id": androidInfo.id.toString(),
+        "status": "true"
+      };
+    } catch (e) {
+      return {"status": "false"};
+    }
   }
 }

@@ -11,7 +11,7 @@ class LocationShareProvider extends ChangeNotifier {
       color = '',
       locInterval = '',
       theme = 'sys';
-  bool locationStatus = false;
+  bool locationStatus = false, backgroundStatus = false;
 
   LocationShareProvider(
       {this.userName = '', this.user_id = '', this.locationStatus = false});
@@ -23,6 +23,7 @@ class LocationShareProvider extends ChangeNotifier {
     required String user_id,
     required String userEmail,
     required bool locationStatus,
+    required bool backgroundStatus,
     required String shareCode,
     required String color,
     required String updateInterval,
@@ -33,12 +34,18 @@ class LocationShareProvider extends ChangeNotifier {
     this.shareCode = shareCode;
     this.color = color;
     this.locationStatus = locationStatus;
+    this.backgroundStatus = backgroundStatus;
     locInterval = updateInterval;
     notifyListeners();
   }
 
   void setLocationStatus({required bool status}) {
     locationStatus = status;
+    notifyListeners();
+  }
+
+  void setBackgroundStatus({required bool status}) {
+    backgroundStatus = status;
     notifyListeners();
   }
 
@@ -49,7 +56,6 @@ class LocationShareProvider extends ChangeNotifier {
 
   set themeData(ThemeData themeData) {
     _themeData = themeData;
-    notifyListeners();
   }
 
   void toggleTheme({required String mode, String? isSys}) {
@@ -63,5 +69,7 @@ class LocationShareProvider extends ChangeNotifier {
       themeData = mode == 'light' ? lightTheme : darkTheme;
       theme = isSys!;
     }
+
+    notifyListeners();
   }
 }

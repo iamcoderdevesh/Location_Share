@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:device_info_plus/device_info_plus.dart';
-import 'package:flutter/material.dart';
+
 import 'package:location_share/state/state.dart';
 import 'package:location_share/utils/utils.dart';
 
@@ -12,18 +11,18 @@ class UserInfoHandler {
   UserInfoHandler(this.state);
 
   Future<void> handleUserInfo() async {
-    late AndroidDeviceInfo androidInfo;
-    DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
-    androidInfo = await deviceInfo.androidInfo;
-
-    state.setUserInfo(
-        userName: androidInfo.host!,
-        user_id: androidInfo.id!,
-        userEmail: "test@mail.com",
-        locationStatus: state.locationStatus,
-        color: color,
-        shareCode: _shareCode, 
-        updateInterval: state.locInterval);
+    Map<String, String>? deviceInfo = await Utils().getDeveiceInfo();
+    if (deviceInfo["status"] == "true") {
+      state.setUserInfo(
+          userName: deviceInfo["host"]!,
+          user_id: deviceInfo["id"]!,
+          userEmail: "test@mail.com",
+          locationStatus: state.locationStatus,
+          backgroundStatus: state.backgroundStatus,
+          color: color,
+          shareCode: _shareCode,
+          updateInterval: state.locInterval);
+    }
 
     try {
       final userDoc = FirebaseFirestore.instance
@@ -38,14 +37,14 @@ class UserInfoHandler {
 
       if (snapshot.exists) {
         state.setUserInfo(
-          user_id: snapshot.data()!['id'],
-          userName: snapshot.data()!['name'],
-          userEmail: snapshot.data()!['email'],
-          locationStatus: snapshot.data()!['locStatus'],
-          shareCode: snapshot.data()!['share_code'],
-          color: snapshot.data()!['color'],
-          updateInterval: snapshot.data()!['locInterval']
-        );
+            user_id: snapshot.data()!['id'],
+            userName: snapshot.data()!['name'],
+            userEmail: snapshot.data()!['email'],
+            locationStatus: snapshot.data()!['locStatus'],
+            backgroundStatus: snapshot.data()!['backgroundStatus'],
+            shareCode: snapshot.data()!['share_code'],
+            color: snapshot.data()!['color'],
+            updateInterval: snapshot.data()!['locInterval']);
       } else {
         await setUserInfo();
       }
@@ -65,6 +64,7 @@ class UserInfoHandler {
         'email': state.userEmail,
         'share_code': state.shareCode,
         'locStatus': state.locationStatus,
+        'backgroundStatus': state.backgroundStatus,
         'locInterval': state.locInterval,
         'color': color,
         'joined_on': DateTime.now().millisecondsSinceEpoch,
@@ -100,9 +100,7 @@ class UserInfoHandler {
       await FirebaseFirestore.instance
           .collection('users_info')
           .doc(state.user_id)
-          .update({
-        'locUpdateInterval': state.locInterval
-      });
+          .update({'locUpdateInterval': state.locInterval});
       return true;
     } catch (e) {
       return false;
@@ -114,13 +112,10 @@ class UserInfoHandler {
       await FirebaseFirestore.instance
           .collection('users_info')
           .doc(state.user_id)
-          .update({
-        'locStatus': state.locationStatus
-      });
+          .update({'locStatus': state.locationStatus, 'backgroundStatus': state.backgroundStatus});
       return true;
     } catch (e) {
       return false;
     }
   }
-
 }

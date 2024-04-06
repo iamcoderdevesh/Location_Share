@@ -87,6 +87,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       user_id: state.user_id,
                       userEmail: email,
                       locationStatus: state.locationStatus,
+                      backgroundStatus: state.backgroundStatus,
                       shareCode: state.shareCode,
                       color: state.color,
                       updateInterval: state.locInterval,
