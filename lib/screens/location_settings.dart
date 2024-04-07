@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:location_share/controllers/UserInfo.dart';
 import 'package:location_share/screens/updateLocationTime.dart';
+import 'package:location_share/services/locationService.dart';
 import 'package:location_share/widgets/snackbar.dart';
 import 'package:provider/provider.dart';
 import '../state/state.dart';
@@ -19,7 +20,6 @@ class _LocationSettingsState extends State<LocationSettings> {
       Provider.of<LocationShareProvider>(context, listen: false);
   late bool _locationSwitch = state.locationStatus;
   late bool _backgroundSwitch = state.backgroundStatus;
-  bool _enabled = true;
 
   @override
   void initState() {
@@ -141,6 +141,10 @@ class _LocationSettingsState extends State<LocationSettings> {
     setState(() {
       _locationSwitch = state.locationStatus;
     });
+    if (!_locationSwitch) {
+      UpdateLocation(state).onStop();
+      BackgroundLocation().onStop();
+    }
   }
 
   Future<void> setBackgroundStatus() async {

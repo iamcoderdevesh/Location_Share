@@ -234,6 +234,7 @@ class _MapOverlayState extends State<MapOverlay> {
           width: 40.0,
           child: CustomMarker(
             initial: doc['name'].toString().substring(0, 1),
+            color: doc['color'],
           ),
         ),
         const SizedBox(width: 10),

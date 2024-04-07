@@ -5,8 +5,8 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:animated_location_indicator/animated_location_indicator.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:location_share/controllers/Location.dart';
 import 'package:location_share/controllers/Share.dart';
+import 'package:location_share/services/locationService.dart';
 import 'package:location_share/state/state.dart';
 import 'package:location_share/utils/utils.dart';
 import 'package:location_share/widgets/bottomSheetModal.dart';
@@ -43,31 +43,14 @@ class _HomePageState extends State<HomePage> {
 
     if (position != null) {
       if (defaultPosition == const LatLng(19.074, 72.889)) {
-        defaultPosition = LatLng(position.latitude as double, position.longitude as double);
+        defaultPosition =
+            LatLng(position.latitude as double, position.longitude as double);
         setState(() {
           _mapController.move(
             defaultPosition,
             16,
           );
         });
-      }
-      if (state.locationStatus) {
-        try {
-          location.getLocation().then((location) {
-              currentLocation = location;
-            },
-          );
-
-          _locationSubscription =
-              location.onLocationChanged.handleError((dynamic err) {
-            _locationSubscription?.cancel();
-          }).listen((loc.LocationData newLoc) async {
-            currentLocation = newLoc;
-            await LocationInfo().updateLocationInFirebase(latitude: newLoc.latitude, longitude: newLoc.longitude);
-          });
-        } catch (e) {
-          print(e);
-        }
       }
     }
     return;
@@ -77,6 +60,7 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     updateMyLocation();
+    UpdateLocation(state).initState();
   }
 
   @override
@@ -177,6 +161,7 @@ class _HomePageState extends State<HomePage> {
                 LatLng(data['latitude'], data['longitude']),
                 userInfo?['user_logo'],
                 userInfo?['user_name'],
+                userInfo?['color'],
                 userAddress,
                 timestamp.toString());
             newMarkers.add(marker);
@@ -190,7 +175,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Marker customMarker(LatLng position, String logo, String userName,
-      String userAddress, String timestamp) {
+      String color, String userAddress, String timestamp) {
     return Marker(
       width: 40.0,
       height: 40.0,
@@ -206,7 +191,7 @@ class _HomePageState extends State<HomePage> {
             16,
           );
         },
-        child: CustomMarker(initial: logo),
+        child: CustomMarker(initial: logo, color: color),
       ),
     );
   }
@@ -322,6 +307,7 @@ class _HomePageState extends State<HomePage> {
         'id': snapshot.data()!['id'],
         'user_logo': snapshot.data()!['name'].toString().substring(0, 1),
         'user_name': snapshot.data()!['name'],
+        'color': snapshot.data()!['color'],
         'status': snapshot.data()!['locStatus'],
       };
     }

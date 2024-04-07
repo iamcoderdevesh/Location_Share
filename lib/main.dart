@@ -63,7 +63,7 @@ class _MyAppState extends State<MainApp> {
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: Provider.of<LocationShareProvider>(context).themeData,
+      theme: context.watch<LocationShareProvider>().themeData,
       home: const SplashScreen(),
     );
   }
