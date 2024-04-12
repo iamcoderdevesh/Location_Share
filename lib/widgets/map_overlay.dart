@@ -119,25 +119,7 @@ class _MapOverlayState extends State<MapOverlay> {
                         child: CircularProgressIndicator(),
                       );
                     }
-                    return FutureBuilder(
-                      future: Future.wait(snapshot.data!.docs
-                          .map((doc) => _buildListItem(context, snapshot))),
-                      builder:
-                          (context, AsyncSnapshot<List<Widget>> listSnapshot) {
-                        if (listSnapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        } else if (listSnapshot.hasError) {
-                          return Text('Error: ${listSnapshot.error}');
-                        } else {
-                          return Column(
-                            children: listSnapshot.data!,
-                          );
-                        }
-                      },
-                    );
+                    return _buildListItem(context, snapshot);
                   },
                 ),
 
@@ -179,48 +161,73 @@ class _MapOverlayState extends State<MapOverlay> {
     );
   }
 
-  Future<Widget> _buildListItem(
-      BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) async {
+  Widget _buildListItem(
+      BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
     final theme = Theme.of(context);
 
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 8.0,
-        vertical: 16.0,
-      ),
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: theme.dividerColor,
-            width: 0.5,
-          ),
-        ),
-      ),
-      child: Column(
-        children: await Future.wait(snapshot.data!.docs.map((doc) async {
-          Map<String, String>? loc =
-              await LocationInfo().getLocationInfo(userId: doc.id);
-          String address = "";
-          if (loc["status"] == "true") {
-            address = await Utils().getUserAddress(LatLng(
-                double.parse(loc["latitude"]!),
-                double.parse(loc["longitude"]!)));
-          }
-          // ignore: use_build_context_synchronously
-          return GestureDetector(
-              onTap: () {
-                if (loc["status"] == "true") {
-                  widget.mapController.move(
-                      LatLng(double.parse(loc["latitude"]!),
-                          double.parse(loc["longitude"]!)),
-                      16);
-                  Navigator.of(context).pop();
-                }
-              },
-              // ignore: use_build_context_synchronously
-              child: locationSharedList(context, doc, address));
-        })),
-      ),
+    return Column(
+      children: [
+        ...snapshot.data!.docs.map(
+          (doc) {
+            return Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 8.0,
+                vertical: 16.0,
+              ),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: theme.dividerColor,
+                    width: 0.5,
+                  ),
+                ),
+              ),
+              child: FutureBuilder(
+                future: LocationInfo().getLocationInfo(userId: doc.id),
+                builder:
+                    (context, AsyncSnapshot<Map<String, String>> locSnapshot) {
+                  if (!locSnapshot.hasData) {
+                    return const SizedBox.shrink();
+                  }
+                  if (locSnapshot.data!["status"] == "true") {
+                    return FutureBuilder(
+                      future: Utils().getUserAddress(LatLng(
+                          double.parse(locSnapshot.data!["latitude"]!),
+                          double.parse(locSnapshot.data!["longitude"]!))),
+                      builder:
+                          (context, AsyncSnapshot<String> addressSnapshot) {
+                        if (!addressSnapshot.hasData) {
+                          return const SizedBox.shrink();
+                        }
+                        return GestureDetector(
+                            onTap: () {
+                              widget.mapController.move(
+                                  LatLng(
+                                      double.parse(
+                                          locSnapshot.data!["latitude"]!),
+                                      double.parse(
+                                          locSnapshot.data!["longitude"]!)),
+                                  16);
+                              Navigator.of(context).pop();
+                            },
+                            child: locationSharedList(
+                                context, doc, addressSnapshot.data!));
+                      },
+                    );
+                  } else {
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.of(context).pop();
+                      },
+                      child: locationSharedList(context, doc, ""),
+                    );
+                  }
+                },
+              ),
+            );
+          },
+        ).toList(),
+      ],
     );
   }
 
