@@ -43,10 +43,8 @@ class _MyAppState extends State<MainApp> {
   @override
   void initState() {
     super.initState();
-    // final loc.Location location = loc.Location();
-    // location.enableBackgroundMode(enable: true);
-    // location.changeSettings(interval: 10, accuracy: loc.LocationAccuracy.high);
-    late LocationShareProvider state = Provider.of<LocationShareProvider>(context, listen: false);
+    late LocationShareProvider state =
+        Provider.of<LocationShareProvider>(context, listen: false);
     UserInfoHandler(state).handleUserInfo();
     BackgroundLocation().initState();
   }
@@ -61,10 +59,14 @@ class _MyAppState extends State<MainApp> {
       state.toggleTheme(mode: isDarkMode ? 'dark' : 'light', isSys: 'sys');
     }
 
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: context.watch<LocationShareProvider>().themeData,
-      home: const SplashScreen(),
+    return Consumer<LocationShareProvider>(
+      builder: (context, theme, child) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: theme.themeData,
+          home: const SplashScreen(),
+        );
+      },
     );
   }
 }

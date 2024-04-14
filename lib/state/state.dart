@@ -12,9 +12,10 @@ class LocationShareProvider extends ChangeNotifier {
       locInterval = '',
       theme = 'sys';
   bool locationStatus = false, backgroundStatus = false;
+  String? language = 'hi-IN', engine = null;
+  double pitch = 1.0, rate = 0.5, volume = 1.0;
 
-  LocationShareProvider(
-      {this.userName = '', this.user_id = '', this.locationStatus = false});
+  LocationShareProvider({this.userName = '', this.user_id = '', this.locationStatus = false});
 
   ThemeData get themeData => _themeData;
 
@@ -70,6 +71,15 @@ class LocationShareProvider extends ChangeNotifier {
       theme = isSys!;
     }
 
+    notifyListeners();
+  }
+
+  void setTtsSettings({String language = '', String engine = '', double volume = 0.5, double pitch = 1.0, double rate = 0.5 }) {
+    this.language = language;
+    this.engine = engine;
+    this.volume = volume;
+    this.pitch = pitch;
+    this.rate = rate;
     notifyListeners();
   }
 }

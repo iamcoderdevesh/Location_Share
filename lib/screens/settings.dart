@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:location_share/screens/location_settings.dart';
 import 'package:location_share/screens/themeSettings.dart';
+import 'package:location_share/screens/ttsSettings.dart';
 import 'package:location_share/widgets/location_marker.dart';
 import 'package:location_share/widgets/ProfileWidget.dart';
 
@@ -48,7 +49,15 @@ class _SettingsPageState extends State<SettingsPage> {
               route: (BuildContext) {
                 return const LocationSettings();
               },
-            )
+            ),
+            // ProfileMenu(
+            //   theme: theme,
+            //   title: "TTS Settings",
+            //   icon: Icons.settings,
+            //   route: (BuildContext) {
+            //     return const TtsSettings();
+            //   },
+            // ),
           ],
         ),
       ),

@@ -10,7 +10,8 @@ import 'package:device_info_plus/device_info_plus.dart';
 class Utils {
   Utils();
 
-  String getFormatedTimeStamp({required String timestamp}) {
+  String getFormatedTimeStamp(
+      {required String timestamp, bool isTimeInHM = false}) {
     // Create a DateFormat
     var format = DateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 
@@ -26,10 +27,15 @@ class Utils {
 
     // Get the time ago
     String updatedAt;
-    if (now.difference(date).inMinutes < 1) {
-      updatedAt = "Just Now";
+    if (isTimeInHM) {
+      DateTime date = format.parse(timestamp);
+      updatedAt = DateFormat('hh:mm a').format(date);
     } else {
-      updatedAt = timeago.format(date, locale: 'en_short') + " ago";
+      if (now.difference(date).inMinutes < 1) {
+        updatedAt = "Just Now";
+      } else {
+        updatedAt = timeago.format(date, locale: 'en_short') + " ago";
+      }
     }
     return updatedAt;
   }
@@ -87,7 +93,36 @@ class Utils {
     List<Placemark> placemarks =
         await placemarkFromCoordinates(position.latitude, position.longitude);
     Placemark place = placemarks[0];
-    return "${place.street}, ${place.name}, ${place.subLocality}, ${place.locality}, ${place.administrativeArea}, ${place.postalCode}, ${place.country}";
+
+    String? place_street = place.street == place.name
+        ? place.name
+        : '${place.street}, ${place.name}';
+
+    String placeDetails = "";
+    placeDetails +=
+        place_street != null && place_street.isNotEmpty ? place_street : "";
+    placeDetails += place.subLocality != null && place.subLocality!.isNotEmpty
+        ? ", ${place.subLocality}"
+        : "";
+    placeDetails += place.locality != null && place.locality!.isNotEmpty
+        ? ", ${place.locality}"
+        : "";
+    placeDetails +=
+        place.administrativeArea != null && place.administrativeArea!.isNotEmpty
+            ? ", ${place.administrativeArea}"
+            : "";
+    placeDetails += place.thoroughfare != null && place.thoroughfare!.isNotEmpty
+        ? ", ${place.thoroughfare}"
+        : "";
+    placeDetails +=
+        place.subThoroughfare != null && place.subThoroughfare!.isNotEmpty
+            ? ", ${place.subThoroughfare}"
+            : "";
+    placeDetails += place.country != null && place.country!.isNotEmpty
+        ? ", ${place.country}"
+        : "";
+
+    return placeDetails;
   }
 
   Future<Map<String, String>> getDeveiceInfo() async {

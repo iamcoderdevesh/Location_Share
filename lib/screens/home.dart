@@ -7,6 +7,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:location_share/controllers/Share.dart';
 import 'package:location_share/services/locationService.dart';
+import 'package:location_share/services/ttsService.dart';
 import 'package:location_share/state/state.dart';
 import 'package:location_share/utils/utils.dart';
 import 'package:location_share/widgets/bottomSheetModal.dart';
@@ -35,7 +36,7 @@ class _HomePageState extends State<HomePage> {
   late List pairsList = [];
   List<Marker> markersList = [];
   LatLng defaultPosition = const LatLng(19.074, 72.889);
-  StreamSubscription<loc.LocationData>? _locationSubscription;
+  late FlutterTtsService _flutterTtsService;
 
   void updateMyLocation() async {
     // ignore: use_build_context_synchronously
@@ -61,6 +62,8 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     updateMyLocation();
     UpdateLocation(state).initState();
+    _flutterTtsService = FlutterTtsService(state);
+    _flutterTtsService.initTts();
   }
 
   @override
@@ -154,7 +157,7 @@ class _HomePageState extends State<HomePage> {
                 ? Utils().getFormatedTimeStamp(
                     timestamp:
                         DateTime.fromMillisecondsSinceEpoch(data['updatedAt'])
-                            .toString())
+                            .toString(), isTimeInHM: true)
                 : "Just Now";
 
             Marker marker = customMarker(
@@ -224,24 +227,24 @@ class _HomePageState extends State<HomePage> {
                       ),
                       Row(
                         children: [
-                          Text(
-                            "0 km away",
-                            style: TextStyle(
-                              color: Colors.grey[500],
-                            ),
-                          ),
-                          const SizedBox(
-                            width: 8,
-                          ),
-                          Text(
-                            "•",
-                            style: TextStyle(
-                              color: Colors.grey[500],
-                            ),
-                          ),
-                          const SizedBox(
-                            width: 8,
-                          ),
+                          // Text(
+                          //   "0 km away",
+                          //   style: TextStyle(
+                          //     color: Colors.grey[500],
+                          //   ),
+                          // ),
+                          // const SizedBox(
+                          //   width: 8,
+                          // ),
+                          // Text(
+                          //   "•",
+                          //   style: TextStyle(
+                          //     color: Colors.grey[500],
+                          //   ),
+                          // ),
+                          // const SizedBox(
+                          //   width: 8,
+                          // ),
                           Text(
                             timestamp,
                             style: TextStyle(
@@ -280,17 +283,13 @@ class _HomePageState extends State<HomePage> {
             const Divider(
               height: 1.0,
             ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-              onPressed: () {},
-              child: Text(
-                "Share location with $userName",
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+            FloatingActionButton(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              onPressed: () async {
+                await _flutterTtsService.speak(text: userAddress);
+              },
+              child: Icon(Icons.graphic_eq,
+                  color: Theme.of(context).colorScheme.onInverseSurface),
             ),
           ],
         ),
